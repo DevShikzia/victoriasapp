@@ -7,8 +7,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { crearApp } from '../app.js';
 import { cargarEnv, type Env } from '../config/env.js';
 import { conectarMongo } from '../db/conexion.js';
+import { PropietarioModel } from '../models/directorio.modelos.js';
 import { UsuarioModel } from '../models/usuario.model.js';
 import { asegurarAdminDesdeEnv } from '../servicios/admin.bootstrap.js';
+import type { DirectorioPull } from '@victoriasapp/shared';
 
 // Usa el binario ya cacheado para no depender de la red.
 process.env.MONGOMS_VERSION = process.env.MONGOMS_VERSION ?? '7.0.24';
@@ -245,5 +247,156 @@ describe('sincronización de visitas', () => {
       (v) => v.uuid === 'salida-1',
     );
     expect(sigueAbierta).toBe(false);
+  });
+});
+
+interface CuerpoData<T> {
+  readonly ok: boolean;
+  readonly data: T;
+}
+
+describe('directorio', () => {
+  const csv = [
+    'lote,propietario,telefono,patente,familiar,parentesco,descripcion',
+    '42,"Perez, Juan",11-5555-5555,AB123CD,,,',
+    '42,"Gomez, Ana",11-6666-6666,AC456EF,Maria Perez,hija,Casa del fondo',
+  ].join('\n');
+
+  async function tokenGuardia(): Promise<string> {
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ usuario: 'guardia1', password: 'clave12345' })
+      .expect(200);
+    return (cuerpoJson(login) as CuerpoLogin).data.accessToken;
+  }
+
+  it('importa el CSV creando barrio, lote, propietarios, vehículos y familiares', async () => {
+    const token = await tokenAdmin();
+    const respuesta = await request(app)
+      .post('/api/directorio/importar')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ barrio: 'El Pare', csv })
+      .expect(200);
+    const datos = (cuerpoJson(respuesta) as CuerpoData<{ creados: number; errores: unknown[] }>)
+      .data;
+    expect(datos.creados).toBe(2);
+    expect(datos.errores).toHaveLength(0);
+  });
+
+  it('es idempotente: reimportar actualiza sin duplicar', async () => {
+    const token = await tokenAdmin();
+    const respuesta = await request(app)
+      .post('/api/directorio/importar')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ barrio: 'El Pare', csv })
+      .expect(200);
+    const datos = (cuerpoJson(respuesta) as CuerpoData<{ creados: number; actualizados: number }>)
+      .data;
+    expect(datos.creados).toBe(0);
+    expect(datos.actualizados).toBe(2);
+    expect(await PropietarioModel.countDocuments({})).toBe(2);
+  });
+
+  it('el pull devuelve las proyecciones con los nombres resueltos', async () => {
+    const token = await tokenAdmin();
+    const respuesta = await request(app)
+      .get('/api/directorio')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const datos = (cuerpoJson(respuesta) as CuerpoData<DirectorioPull>).data;
+
+    const lote = datos.lotes.find((l) => l.numero === '42');
+    expect(lote?.propietarioNombre).toContain('Juan Perez');
+    expect(lote?.propietarioNombre).toContain('Ana Gomez');
+
+    const vehiculo = datos.vehiculos.find((v) => v.patente === 'AB123CD');
+    expect(vehiculo?.loteNumero).toBe('42');
+    expect(vehiculo?.propietarioNombre).toBe('Juan Perez');
+
+    const familiar = datos.familiares.find((f) => f.nombre === 'Maria Perez');
+    expect(familiar?.propietarioNombre).toBe('Ana Gomez');
+    expect(familiar?.loteNumero).toBe('42');
+  });
+
+  it('el pull incremental no repite lo ya visto', async () => {
+    const token = await tokenAdmin();
+    const primero = await request(app)
+      .get('/api/directorio')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const desde = (cuerpoJson(primero) as CuerpoData<DirectorioPull>).data.desde;
+
+    const segundo = await request(app)
+      .get(`/api/directorio?desde=${encodeURIComponent(desde)}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const datos = (cuerpoJson(segundo) as CuerpoData<DirectorioPull>).data;
+    expect(datos.lotes).toHaveLength(0);
+    expect(datos.propietarios).toHaveLength(0);
+    expect(datos.vehiculos).toHaveLength(0);
+  });
+
+  it('un guardia puede leer pero no importar (403)', async () => {
+    const token = await tokenGuardia();
+    await request(app).get('/api/directorio').set('Authorization', `Bearer ${token}`).expect(200);
+    await request(app)
+      .post('/api/directorio/importar')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ csv })
+      .expect(403);
+  });
+
+  it('ABM de propietarios: crea, busca, edita y borra dejando lápida', async () => {
+    const token = await tokenAdmin();
+    const base = await request(app)
+      .get('/api/directorio')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const desde = (cuerpoJson(base) as CuerpoData<DirectorioPull>).data.desde;
+
+    const creado = await request(app)
+      .post('/api/propietarios')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ nombre: 'Carlos', apellido: 'Lopez', telefono: '11-7777-7777' })
+      .expect(201);
+    const creadoData = (cuerpoJson(creado) as CuerpoData<{ id: string; uuid: string }>).data;
+
+    const busqueda = await request(app)
+      .get('/api/propietarios?q=lopez')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const lista = (cuerpoJson(busqueda) as CuerpoData<{ apellido: string }[]>).data;
+    expect(lista.some((p) => p.apellido === 'Lopez')).toBe(true);
+
+    await request(app)
+      .patch(`/api/propietarios/${creadoData.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ telefono: '11-0000-0000' })
+      .expect(200);
+
+    await request(app)
+      .delete(`/api/propietarios/${creadoData.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const despues = await request(app)
+      .get(`/api/directorio?desde=${encodeURIComponent(desde)}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const datos = (cuerpoJson(despues) as CuerpoData<DirectorioPull>).data;
+    expect(datos.eliminados).toContainEqual({
+      entidad: 'propietario',
+      uuid: creadoData.uuid,
+    });
+  });
+
+  it('busca vehículos por patente', async () => {
+    const token = await tokenAdmin();
+    const respuesta = await request(app)
+      .get('/api/vehiculos?patente=ab123cd')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const lista = (cuerpoJson(respuesta) as CuerpoData<{ patente: string }[]>).data;
+    expect(lista.some((v) => v.patente === 'AB123CD')).toBe(true);
   });
 });

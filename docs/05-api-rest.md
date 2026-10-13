@@ -3,9 +3,10 @@
 Base: `/api`. Todas las respuestas son JSON. Autenticación por **Bearer JWT** (ver
 [seguridad](./06-seguridad.md)).
 
-> **Estado (Fase 3):** implementado autenticación (`/api/auth/*`), RBAC, `/api/sync` idempotente,
+> **Estado (Fase 4):** implementado autenticación (`/api/auth/*`), RBAC, `/api/sync` idempotente,
 > `/api/visits` (`GET`, `GET /abiertas`, `POST /:id/salida`) y `/api/users` (ABM, sólo admin).
-> Las secciones de **Directorio** y **Tiempo real (Socket.IO)** quedan para la Fase 4.
+> Sumado en Fase 4: el **directorio** (`/api/directorio` + ABM por entidad, ver más abajo) y el
+> canal de **tiempo real** (Socket.IO, namespace `/realtime`).
 
 ## Convenciones
 
@@ -117,25 +118,66 @@ Reglas:
 
 ## Directorio
 
-### `GET /api/propietarios`
+Cada entidad del directorio (`barrio`, `lote`, `propietario`, `familiar`, `vehiculo`) tiene un CRUD
+completo bajo su prefijo. Todas las rutas exigen autenticación; **crear/editar/borrar** requieren rol
+`admin` o `supervisor`. El **borrado es lógico para la sync**: se elimina el documento y se deja una
+"lápida" en la colección `eliminados` para que el pull incremental propague la baja.
 
-Búsqueda: `q` (nombre o apellido), `lote`, `page`, `limit`.
+| Entidad | Prefijo | Búsqueda (`query`) |
+| --- | --- | --- |
+| Barrio | `/api/barrios` | `q` (nombre) |
+| Lote | `/api/lotes` | `q` (número), `barrioId` |
+| Propietario | `/api/propietarios` | `q` (nombre o apellido), `lote`, `barrioId` |
+| Familiar | `/api/familiares` | `q` (nombre), `propietarioId` |
+| Vehículo | `/api/vehiculos` | `patente`, `propietarioId` |
 
-### `GET /api/propietarios/:id`
+En todos: `GET /` (lista), `POST /`, `GET /:id`, `PATCH /:id`, `DELETE /:id`. Paginación `page`
+(default 1) y `limit` (por defecto 200, máximo 500).
 
-### `POST /api/propietarios` (admin/supervisor)
+### `GET /api/directorio?desde=<ISO>`
 
-### `PATCH /api/propietarios/:id`
+**Pull incremental** para la caché offline del PWA. Devuelve las **proyecciones locales** (nombres
+desnormalizados, listas para guardar sin join) de todo lo que cambió después de `desde`, más las
+bajas:
 
-### `DELETE /api/propietarios/:id`
+```json
+{
+  "ok": true,
+  "data": {
+    "desde": "2026-10-13T12:00:00.000Z",
+    "lotes": [],
+    "propietarios": [],
+    "familiares": [],
+    "vehiculos": [],
+    "eliminados": [{ "uuid": "…", "entidad": "propietario", "eliminadoEn": "…" }]
+  }
+}
+```
 
-### `GET /api/lotes`, `POST /api/lotes`, `PATCH /api/lotes/:id`
+- Sin `desde` devuelve el directorio completo (primer pull).
+- El cliente guarda el `desde` devuelto y lo manda en el próximo pull.
+- Aplicar el resultado es **idempotente** (`bulkPut` por `uuid` + bajas).
 
-### `GET /api/vehiculos`
+### `POST /api/directorio/importar` (admin/supervisor)
 
-Búsqueda por `patente`.
+Importa un CSV: crea barrio, lotes, propietarios, familiares y vehículos. Ver formato en
+[`09-directorio-barrio.md`](./09-directorio-barrio.md).
 
-### `GET /api/familiares`
+```json
+{ "barrio": "Los Álamos", "csv": "lote,propietario,telefono,patente\n42,Juan Perez,11-5555-5555,AB123CD" }
+```
+
+```json
+{
+  "ok": true,
+  "data": { "creados": 1, "actualizados": 0, "lotes": 1, "vehiculos": 1, "errores": [] }
+}
+```
+
+### `GET /api/barrios`, `GET /api/lotes`, `GET /api/propietarios`, `GET /api/familiares`, `GET /api/vehiculos`
+
+Listado con filtros de búsqueda (ver tabla). Ejemplos: `GET /api/propietarios?q=perez`,
+`GET /api/vehiculos?patente=AB123CD`, `GET /api/familiares?propietarioId=…`.
 
 ## Usuarios (admin)
 
@@ -149,13 +191,18 @@ Devuelve estado del servicio y de la conexión a Mongo.
 
 ## Tiempo real (Socket.IO)
 
-Namespace `/realtime`. El cliente se autentica con el `accessToken`.
+Namespace `/realtime`. El cliente se autentica con el `accessToken` en el handshake
+(`auth: { token }`). Si el token es inválido, el servidor rechaza la conexión.
 
 | Evento | Dirección | Payload |
 | --- | --- | --- |
-| `visit:created` | servidor → clientes | Visita creada |
-| `visit:updated` | servidor → clientes | Visita actualizada |
-| `visit:exit` | servidor → clientes | Se marcó salida |
+| `conectado` | servidor → cliente | `{ usuario, nombre, rol }` (confirma la autenticación) |
+| `visita:creada` | servidor → clientes | `{ visita: VisitaDto }` |
+| `visita:actualizada` | servidor → clientes | `{ visita: VisitaDto }` (incluye el egreso) |
+| `directorio:actualizado` | servidor → clientes | `{ entidad, uuid, operacion: 'crear' \| 'actualizar' \| 'eliminar' }` |
+
+El panel en vivo (`/panel` en el PWA) usa `visita:creada` y `visita:actualizada` para mostrar las
+visitas abiertas de todos los puestos; `directorio:actualizado` sirve para refrescar el directorio.
 
 ## Códigos de error
 

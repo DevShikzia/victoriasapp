@@ -51,6 +51,10 @@ Si el propietario no existe, el guardia (o el supervisor) puede **cargarlo al vu
 - Queda en el `outbox` y se sincroniza igual que una visita.
 - Luego se completa la información (familia, vehículos) desde la administración.
 
+> **Estado (Fase 4):** el ABM del directorio funciona hoy **online** (admin/supervisor) y el PWA
+> cachea el directorio por **pull incremental** para buscar **sin red**. La **alta rápida desde la
+> garita offline** (cargar el propietario nuevo y encolarlo en el `outbox`) queda pendiente.
+
 ## Actualización permanente
 
 - El directorio se puede editar en cualquier momento (admin/supervisor).
@@ -69,4 +73,20 @@ lote,propietario,telefono,patente,familiar,parentesco,descripcion
 42,Ana Gomez,11-6666-6666,AC456EF,Maria Perez,hija,
 ```
 
-Columnas vacías se ignoran. Las patentes se normalizan (mayúsculas, sin espacios).
+Columnas vacías se ignoran. Las patentes se normalizan (mayúsculas, sin espacios). El parser
+(`parsearCsvDirectorio` en `@victoriasapp/shared`) acepta `,`, `;` o tabulaciones, campos entre
+comillas y acentos, y lo reutilizan la API y el PWA.
+
+### Implementación (`POST /api/directorio/importar`, admin/supervisor)
+
+- Recibe `{ barrio, csv }` y devuelve `{ creados, actualizados, lotes, vehiculos, errores }`.
+- Claves naturales: barrio por nombre, lote por barrio+número, propietario por barrio+nombre+apellido,
+  vehículo por patente, familiar por propietario+nombre.
+
+## Sincronización con el PWA
+
+- `GET /api/directorio?desde=<ISO>` devuelve los cambios desde la última fecha (proyecciones locales
+  desnormalizadas) más las **bajas** (`eliminados`). Ver [`05-api-rest.md`](./05-api-rest.md).
+- El PWA guarda el `desde` en `meta` (clave `directorio.ultimaSync`) y lo manda en el próximo pull.
+- Aplicar el resultado es **idempotente** (`bulkPut` por `uuid` + borrado de las bajas).
+- Los cambios publican `directorio:actualizado` por Socket.IO para que los paneles se refresquen.

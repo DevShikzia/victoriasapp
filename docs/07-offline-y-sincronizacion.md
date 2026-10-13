@@ -76,8 +76,10 @@ POST /api/sync ──► Mongo (upsert por uuid)
 
 - El directorio (propietarios, lotes, vehículos, familiares) se **descarga** y se cachea para poder
   buscar **sin red**.
-- Sólo se descargan los cambios desde la última sincronización (`updatedAt > ultimaSync`).
-- El ABM offline se encola en el `outbox` como cualquier otra entidad.
+- Sólo se descargan los cambios desde la última sincronización (`updatedAt > ultimaSync`), más las
+  bajas (`eliminados`) para propagar los borrados.
+- El ABM offline (encolar altas/ediciones del directorio en el `outbox`) está **pendiente**: hoy el
+  ABM del directorio es online (admin/supervisor) y el PWA sólo lo cachea para consultar.
 
 ## Detección de conectividad
 
@@ -96,16 +98,21 @@ POST /api/sync ──► Mongo (upsert por uuid)
 - Simular corte de red en medio del envío y comprobar que no se duplica.
 - Sincronizar desde dos dispositivos a la vez con el mismo `uuid`.
 
-## Implementado (Fase 2)
+## Implementado (Fases 2–4)
 
-La parte local ya está en el PWA:
+La parte local está en el PWA:
 
 - `apps/web/src/app/core/db/base-local.ts` — la base Dexie con todas las tablas.
 - `apps/web/src/app/core/db/datos.service.ts` — guardar visita / marcar salida / buscar en el
   directorio. Cada cambio escribe en la entidad **y** en `outbox` dentro de una transacción.
+  También `aplicarDirectorio(pull)`: hace `bulkPut` de las proyecciones locales y procesa las bajas.
 - `apps/web/src/app/features/visita/` — formulario de nueva visita + escáner de DNI incrustado.
 - `apps/web/src/app/features/visitas/` — listado con estado de sync y marcado de salida.
-- Tests: `datos.service.spec.ts` (guardar, salir, buscar en el directorio de ejemplo).
+- `apps/web/src/app/core/sync/sincronizador.service.ts` — sube el `outbox` (`POST /api/sync`) **y**
+  baja el directorio (`GET /api/directorio?desde=`) usando `meta`/`directorio.ultimaSync`.
+- `apps/web/src/app/core/tiempo-real/tiempo-real.service.ts` + `features/panel/` — panel en vivo
+  por Socket.IO.
 
-La **subida** (`POST /api/sync`, `pull` del directorio, refresh de tokens) es la Fase 3 y todavía no
-está: hoy el `outbox` acumula operaciones y el indicador de la barra muestra cuántas hay pendientes.
+La **subida del outbox** y el **pull incremental del directorio** ya están (Fases 3 y 4). Pendiente:
+la **edición offline del directorio** (hoy el ABM es online, admin/supervisor) y el pull de visitas
+cambiadas desde otros puestos (hoy el panel las recibe por tiempo real).

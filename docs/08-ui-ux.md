@@ -62,6 +62,11 @@ y **computadora de monitoreo** (vista de panel). El diseño prioriza velocidad y
 - Búsqueda por DNI, nombre o patente.
 - Resaltado de nuevos ingresos.
 
+> **Estado (Fase 4):** implementado en el PWA como ruta **`/panel`** (`features/panel/`). Muestra las
+> visitas abiertas de todos los puestos (fusiona lo local del dispositivo con lo que llega por
+> `visita:creada`/`visita:actualizada`), indica el estado de la conexión y exporta **CSV** de las
+> visitas abiertas. Faltan los filtros y el histórico con rango de fechas.
+
 ### Reportes (supervisor/admin)
 
 - Exportación a CSV/Excel por rango de fechas.

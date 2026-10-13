@@ -21,6 +21,12 @@ export const routes: Routes = [
     title: 'Nueva visita · Victorias',
   },
   {
+    path: 'panel',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/panel/panel').then((m) => m.PanelEnVivo),
+    title: 'Panel en vivo · Victorias',
+  },
+  {
     path: 'captura',
     canActivate: [authGuard],
     loadComponent: () => import('./features/captura/captura').then((m) => m.Captura),

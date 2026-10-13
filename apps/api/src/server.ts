@@ -1,9 +1,12 @@
 import 'dotenv/config';
 
+import { createServer } from 'node:http';
+
 import { crearApp } from './app.js';
 import { cargarEnv } from './config/env.js';
 import { conectarMongo } from './db/conexion.js';
 import { asegurarAdminDesdeEnv } from './servicios/admin.bootstrap.js';
+import { crearServidorTiempoReal } from './tiempo-real/socket.js';
 
 async function principal(): Promise<void> {
   const env = cargarEnv();
@@ -24,7 +27,9 @@ async function principal(): Promise<void> {
   }
 
   const app = crearApp(env);
-  app.listen(env.PORT, () => {
+  const httpServer = createServer(app);
+  crearServidorTiempoReal(httpServer, env);
+  httpServer.listen(env.PORT, () => {
     console.warn(`API victoriasapp escuchando en http://localhost:${String(env.PORT)}`);
   });
 }

@@ -9,6 +9,7 @@ import { asincrono, paramId, respuestaOk } from '../lib/http.js';
 import type { Visita } from '../models/visita.model.js';
 import { VisitaModel } from '../models/visita.model.js';
 import { aVisitaDto } from '../servicios/visitas.service.js';
+import { publicar } from '../tiempo-real/bus.js';
 
 function textoQuery(valor: unknown): string | null {
   return typeof valor === 'string' && valor.trim() !== '' ? valor.trim() : null;
@@ -103,6 +104,7 @@ export function crearRutasVisitas(env: Env): Router {
       doc.salidaEn = new Date();
       doc.syncRev += 1;
       await doc.save();
+      publicar('visita:actualizada', { visita: aVisitaDto(doc) });
       respuestaOk(res, aVisitaDto(doc));
     }),
   );

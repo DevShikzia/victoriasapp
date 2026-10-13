@@ -1,0 +1,73 @@
+<section class="panel">
+  <header class="encabezado">
+    <h2>Panel en vivo</h2>
+    <span class="enlace" [class.enlace--on]="tiempoReal.conectado()">
+      <span class="punto" [class.punto--on]="tiempoReal.conectado()"></span>
+      {{ tiempoReal.conectado() ? 'Tiempo real activo' : 'Sin tiempo real' }}
+    </span>
+  </header>
+
+  <div class="resumen">
+    <div class="metrica">
+      <span class="numero">{{ abiertas().length }}</span>
+      <span class="etiqueta">abiertas ahora</span>
+    </div>
+    <div class="metrica">
+      <span class="numero">{{ datos.visitas().length }}</span>
+      <span class="etiqueta">en este celular</span>
+    </div>
+    <div class="metrica" [class.metrica--alerta]="datos.pendientes() > 0">
+      <span class="numero">{{ datos.pendientes() }}</span>
+      <span class="etiqueta">por sincronizar</span>
+    </div>
+  </div>
+
+  @if (tiempoReal.ultimoEvento(); as evento) {
+    <p class="aviso" role="status">Último evento: {{ evento }}</p>
+  }
+
+  @if (mensaje(); as texto) {
+    <p class="aviso" role="status">{{ texto }}</p>
+  }
+
+  <div class="herramientas">
+    <button type="button" class="boton" (click)="exportarCsv()">Exportar CSV</button>
+  </div>
+
+  @if (abiertas().length === 0) {
+    <p class="vacio">No hay visitas abiertas en este momento.</p>
+  } @else {
+    <div class="tabla">
+      <table>
+        <thead>
+          <tr>
+            <th>Visitante</th>
+            <th>DNI</th>
+            <th>Patente</th>
+            <th>Lote</th>
+            <th>Motivo</th>
+            <th>Entrada</th>
+            <th>Origen</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (fila of abiertas(); track fila.uuid) {
+            <tr>
+              <td class="nombre">{{ fila.apellido }}, {{ fila.nombre }}</td>
+              <td>{{ fila.dni }}</td>
+              <td>{{ fila.patente ?? '—' }}</td>
+              <td>{{ fila.loteNumero ?? '—' }}</td>
+              <td>{{ fila.motivo ?? '—' }}</td>
+              <td>{{ fila.entradaEn | date: 'HH:mm' }}</td>
+              <td>
+                <span class="chip" [class.chip--red]="fila.origen === 'red'">{{
+                  fila.origen
+                }}</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

@@ -5,12 +5,21 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import type { NuevaVisita, ResultadoSync, SolicitudSync } from '@victoriasapp/shared';
+import type {
+  DirectorioPull,
+  NuevaVisita,
+  ResultadoSync,
+  SolicitudSync,
+} from '@victoriasapp/shared';
 
 import { CONFIG } from '../config/config';
 import { SesionService } from '../auth/sesion.service';
 import { DatosService } from '../db/datos.service';
 import { SincronizadorService } from './sincronizador.service';
+
+function pullVacio(desde = new Date().toISOString()): DirectorioPull {
+  return { desde, lotes: [], propietarios: [], familiares: [], vehiculos: [], eliminados: [] };
+}
 
 function visitaDePrueba(): NuevaVisita {
   return {
@@ -102,8 +111,46 @@ describe('SincronizadorService', () => {
     const respuesta: ResultadoSync = { aplicados: [visita.uuid], duplicados: [], errores: [] };
     peticion.flush({ ok: true, data: respuesta });
 
+    const directorio = await esperarPeticion(`${CONFIG.apiBaseUrl}/api/directorio`);
+    expect(directorio.request.method).toBe('GET');
+    directorio.flush({ ok: true, data: pullVacio() });
+
     expect(await promesa).toBe(true);
     expect(datos.pendientes()).toBe(0);
     expect(datos.visitas()[0]?.estadoSync).toBe('sincronizada');
+  });
+
+  it('guarda los cambios del directorio en la caché local', async () => {
+    await iniciarSesion();
+
+    const promesa = sincro.sincronizar();
+    http.expectNone(`${CONFIG.apiBaseUrl}/api/sync`);
+
+    const directorio = await esperarPeticion(`${CONFIG.apiBaseUrl}/api/directorio`);
+    directorio.flush({
+      ok: true,
+      data: {
+        desde: '2026-01-01T00:00:00.000Z',
+        lotes: [
+          {
+            uuid: 'lote-1',
+            numero: '42',
+            calle: 'Los Álamos',
+            propietarioNombre: 'Juan Perez',
+            actualizadoEn: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+        propietarios: [],
+        familiares: [],
+        vehiculos: [],
+        eliminados: [],
+      } satisfies DirectorioPull,
+    });
+
+    expect(await promesa).toBe(true);
+    const lotes = await datos.buscarLotes('42');
+    expect(lotes.length).toBe(1);
+    expect(lotes[0]?.propietarioNombre).toBe('Juan Perez');
+    expect(await datos.valorMeta('directorio.ultimaSync')).toBe('2026-01-01T00:00:00.000Z');
   });
 });

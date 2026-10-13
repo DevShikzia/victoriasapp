@@ -69,13 +69,22 @@ el problema real (el escaneo) cuanto antes.
 
 ## Fase 4 — Directorio + panel en vivo
 
-- [ ] ABM de barrio, lotes, propietarios, familiares y vehículos.
-- [ ] Búsquedas (nombre / lote / patente) offline.
-- [ ] Panel en la computadora con Socket.IO (tiempo real).
-- [ ] Reportes y export desde el panel.
-- [ ] Importador CSV del directorio.
+- [x] ABM de barrio, lotes, propietarios, familiares y vehículos (API, admin/supervisor).
+- [x] Búsquedas (nombre / lote / patente) — API online; en el PWA la caché local ya guarda el
+      directorio por pull incremental (la búsqueda offline usa los datos cacheados de Fase 2).
+- [x] Panel en la computadora con Socket.IO (tiempo real) — `/panel` en el PWA.
+- [x] Reportes y export desde el panel (export CSV de visitas abiertas).
+- [x] Importador CSV del directorio (`POST /api/directorio/importar`).
+- [ ] ABM del directorio **desde el PWA** (hoy es sólo API; falta la pantalla de administración).
+- [ ] Alta rápida desde la garita **offline** (encolar propietario nuevo en el `outbox`).
 
 **Entregable:** varios puestos comparten datos y el monitoreo es en vivo.
+
+> **Estado:** la API del directorio (ABM, pull incremental, importador CSV y tombstones de borrado)
+> y el canal de tiempo real (namespace `/realtime`) están hechos y testeados. En el PWA, el
+> sincronizador ahora también baja el directorio a IndexedDB y existe el **panel en vivo** (`/panel`)
+> con las visitas abiertas de todos los puestos y export CSV. Falta la UI de administración del
+> directorio y la edición offline.
 
 ## Fase 5 — Pulido
 

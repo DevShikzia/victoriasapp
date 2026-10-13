@@ -20,10 +20,19 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
 
 ## 🟡 Deseables (no bloquean)
 
-- [ ] **Export a CSV local** de las visitas (Fase 2, último ítem).
+- [ ] **ABM del directorio desde el PWA** (hoy el ABM existe sólo en la API). Pantalla de
+      administración para barrio, lotes, propietarios, familiares y vehículos.
+- [ ] **Edición offline del directorio** (alta rápida desde la garita): encolar en el `outbox` y
+      resolver conflictos al sincronizar. En esta fase el ABM es **online** (admin/supervisor).
+- [x] **Export a CSV local** de las visitas abiertas — hecho en el **panel en vivo** (`/panel`).
+      Falta exportar el histórico completo con filtros por fecha.
+- [ ] **Búsqueda difusa offline** en el directorio cacheado (hoy la búsqueda local es por
+      coincidencia directa sobre los datos de Fase 2).
 - [ ] **Lista de propietarios / lotes real del barrio** (Excel o carga por la app) para poblar el
-      directorio. Mientras tanto, hay datos de ejemplo para probar (ver \"Datos de ejemplo\" abajo).
-- [ ] Nombre definitivo del producto (hoy \"Victorias · El Pare\").
+      directorio. Mientras tanto, hay datos de ejemplo para probar (ver "Datos de ejemplo" abajo).
+- [ ] Probar el **panel en vivo con varios dispositivos** reales conectados (el canal está testeado a
+      nivel API).
+- [ ] Nombre definitivo del producto (hoy "Victorias · El Pare").
 
 ## 🟢 Hechas
 
@@ -39,8 +48,14 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
       `POST /api/sync` idempotente por `uuid`, endpoints de visitas y ABM de usuarios (admin).
       En el PWA: pantalla de **login**, guard de rutas, interceptor con `Bearer` + refresh automático
       y **sincronizador** que vacía el outbox al volver la red.
-- [x] Tests: parser + esquemas (`shared`, 19), integración de la API con Mongo en memoria (`api`, 13)
-      y flujo offline/sync en el PWA (`web`, 10).
+- [x] **Fase 4 (API + PWA) — directorio + tiempo real:** ABM de barrio/lotes/propietarios/familiares/
+      vehículos, **pull incremental** `GET /api/directorio?desde=` con bajas (tombstones),
+      **importador CSV**, canal **Socket.IO** (`/realtime`) con eventos `visita:creada`,
+      `visita:actualizada` y `directorio:actualizado`. En el PWA: el sincronizador baja el directorio
+      a IndexedDB y el **panel en vivo** (`/panel`) muestra las visitas abiertas de todos los puestos
+      con export CSV.
+- [x] Tests: parser + esquemas + CSV/nombre (`shared`, 34), integración de la API con Mongo en memoria
+      (`api`, 20) y flujo offline/sync + pull del directorio en el PWA (`web`, 11).
 
 ---
 

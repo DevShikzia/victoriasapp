@@ -98,6 +98,21 @@ Todas las colecciones usan TypeScript estricto (sin `any`). Los esquemas Mongoos
 
 Índices: `patente` (único), `loteId`.
 
+> Las cinco entidades del directorio (`barrios`, `lotes`, `propietarios`, `familiares`, `vehiculos`)
+> llevan además un campo **`uuid`** (único) para poder crearlas/editarlas offline de forma idempotente,
+> y `activo` (boolean). Ver `apps/api/src/models/directorio.modelos.ts`.
+
+### `eliminados` — Lápidas de borrado (sync)
+
+| Campo | Tipo | Notas |
+| --- | --- | --- |
+| `uuid` | string | Documento borrado |
+| `entidad` | string | `barrio` \| `lote` \| `propietario` \| `familiar` \| `vehiculo` |
+| `eliminadoEn` | Date | Cuándo se borró |
+
+Índices: `eliminadoEn`. El borrado del directorio es lógico **para la sync**: se elimina el documento y
+se deja esta fila, para que el pull incremental indique a los clientes que limpien su caché.
+
 ### `visitas` — Registros de ingreso/egreso
 
 | Campo | Tipo | Notas |

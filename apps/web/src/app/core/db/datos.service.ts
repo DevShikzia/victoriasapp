@@ -1,5 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import type {
+  DirectorioPull,
+  EntidadDirectorio,
   ErrorSync,
   LoteLocal,
   NuevaVisita,
@@ -8,7 +10,12 @@ import type {
   Visita,
   VisitaSync,
 } from '@victoriasapp/shared';
-import { crearIdLocal, esquemaVisitaSync, normalizarPatente } from '@victoriasapp/shared';
+import {
+  META_ULTIMA_SYNC_DIRECTORIO,
+  crearIdLocal,
+  esquemaVisitaSync,
+  normalizarPatente,
+} from '@victoriasapp/shared';
 
 import { obtenerBaseLocal } from './base-local';
 import { datosDeEjemplo } from './seed';
@@ -234,6 +241,66 @@ export class DatosService {
       (await this.db.vehiculos.count()) +
       (await this.db.familiares.count())
     );
+  }
+
+  // --- Directorio remoto (pull incremental) ---
+
+  /** Lee un valor de metadatos locales. */
+  async valorMeta(clave: string): Promise<string | null> {
+    const item = await this.db.meta.get(clave);
+    return item?.valor ?? null;
+  }
+
+  /**
+   * Aplica el resultado del pull incremental del directorio a la caché local.
+   * Idempotente: hace `bulkPut` por uuid y procesa las bajas.
+   */
+  async aplicarDirectorio(pull: DirectorioPull): Promise<void> {
+    await this.db.transaction(
+      'rw',
+      this.db.lotes,
+      this.db.propietarios,
+      this.db.familiares,
+      this.db.vehiculos,
+      this.db.meta,
+      async () => {
+        if (pull.lotes.length > 0) {
+          await this.db.lotes.bulkPut([...pull.lotes]);
+        }
+        if (pull.propietarios.length > 0) {
+          await this.db.propietarios.bulkPut([...pull.propietarios]);
+        }
+        if (pull.familiares.length > 0) {
+          await this.db.familiares.bulkPut([...pull.familiares]);
+        }
+        if (pull.vehiculos.length > 0) {
+          await this.db.vehiculos.bulkPut([...pull.vehiculos]);
+        }
+        for (const eliminado of pull.eliminados) {
+          await this.borrarEntidadLocal(eliminado.entidad, eliminado.uuid);
+        }
+        await this.db.meta.put({ clave: META_ULTIMA_SYNC_DIRECTORIO, valor: pull.desde });
+      },
+    );
+  }
+
+  private async borrarEntidadLocal(entidad: EntidadDirectorio, uuid: string): Promise<void> {
+    switch (entidad) {
+      case 'lote':
+        await this.db.lotes.delete(uuid);
+        break;
+      case 'propietario':
+        await this.db.propietarios.delete(uuid);
+        break;
+      case 'familiar':
+        await this.db.familiares.delete(uuid);
+        break;
+      case 'vehiculo':
+        await this.db.vehiculos.delete(uuid);
+        break;
+      case 'barrio':
+        break;
+    }
   }
 
   // --- Utilidades de desarrollo ---

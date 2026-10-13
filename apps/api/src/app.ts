@@ -7,6 +7,14 @@ import mongoose from 'mongoose';
 import { origenesCors, type Env } from './config/env.js';
 import { manejadorErrores, noEncontrado } from './lib/http.js';
 import { crearRutasAuth } from './rutas/auth.rutas.js';
+import {
+  crearRutasBarrios,
+  crearRutasDirectorio,
+  crearRutasFamiliares,
+  crearRutasLotes,
+  crearRutasPropietarios,
+  crearRutasVehiculos,
+} from './rutas/directorio.rutas.js';
 import { crearRutasSync } from './rutas/sync.rutas.js';
 import { crearRutasUsuarios } from './rutas/usuarios.rutas.js';
 import { crearRutasVisitas } from './rutas/visitas.rutas.js';
@@ -60,6 +68,12 @@ export function crearApp(env: Env): Express {
   app.use('/api/users', crearRutasUsuarios(env));
   app.use('/api/visits', crearRutasVisitas(env));
   app.use('/api/sync', crearRutasSync(env));
+  app.use('/api/directorio', crearRutasDirectorio(env));
+  app.use('/api/barrios', crearRutasBarrios(env));
+  app.use('/api/lotes', crearRutasLotes(env));
+  app.use('/api/propietarios', crearRutasPropietarios(env));
+  app.use('/api/familiares', crearRutasFamiliares(env));
+  app.use('/api/vehiculos', crearRutasVehiculos(env));
 
   app.use(noEncontrado());
   app.use(manejadorErrores(env));

@@ -7,7 +7,14 @@
  */
 
 import { z } from 'zod';
-import { FORMATOS_DNI, SEXOS, TIPOS_VISITA } from './dominio.js';
+import {
+  FORMATOS_DNI,
+  SEXOS,
+  TIPOS_VISITA,
+  type DniFormato,
+  type Sexo,
+  type TipoVisita,
+} from './dominio.js';
 
 export const ESTADOS_SYNC = ['pendiente', 'sincronizada', 'error'] as const;
 export type EstadoSync = (typeof ESTADOS_SYNC)[number];
@@ -98,6 +105,33 @@ export const esquemaVisitaSync = z.object({
   actualizadoEn: z.string().datetime(),
 });
 export type VisitaSync = z.infer<typeof esquemaVisitaSync>;
+
+/**
+ * Visita tal como la devuelve la API (también viaja por tiempo real).
+ * Los ids son strings; las fechas, ISO.
+ */
+export interface VisitaDto {
+  readonly id: string;
+  readonly uuid: string;
+  readonly tipo: TipoVisita;
+  readonly apellido: string;
+  readonly nombre: string;
+  readonly dni: string;
+  readonly fechaNacimiento: string | null;
+  readonly sexo: Sexo | null;
+  readonly formatoDocumento: DniFormato;
+  readonly documentoRaw: string | null;
+  readonly patente: string | null;
+  readonly loteNumero: string | null;
+  readonly propietarioNombre: string | null;
+  readonly motivo: string | null;
+  readonly acompanantes: number;
+  readonly entradaEn: string;
+  readonly salidaEn: string | null;
+  readonly creadoOffline: boolean;
+  readonly syncRev: number;
+  readonly actualizadoEn: string;
+}
 
 /** Convierte una visita local (PWA) al formato que espera la API. */
 export function aVisitaSync(visita: Visita): VisitaSync {

@@ -1,41 +1,11 @@
-import type {
-  DniFormato,
-  ResultadoSync,
-  Sexo,
-  TipoVisita,
-  UsuarioPublico,
-  VisitaSync,
-} from '@victoriasapp/shared';
+import type { ResultadoSync, UsuarioPublico, VisitaDto, VisitaSync } from '@victoriasapp/shared';
 import { Types, type HydratedDocument } from 'mongoose';
 
 import type { Visita } from '../models/visita.model.js';
 import { VisitaModel } from '../models/visita.model.js';
+import { publicar } from '../tiempo-real/bus.js';
 
 export type VisitaDoc = HydratedDocument<Visita>;
-
-/** Visita tal como la devuelve la API. */
-export interface VisitaDto {
-  readonly id: string;
-  readonly uuid: string;
-  readonly tipo: TipoVisita;
-  readonly apellido: string;
-  readonly nombre: string;
-  readonly dni: string;
-  readonly fechaNacimiento: string | null;
-  readonly sexo: Sexo | null;
-  readonly formatoDocumento: DniFormato;
-  readonly documentoRaw: string | null;
-  readonly patente: string | null;
-  readonly loteNumero: string | null;
-  readonly propietarioNombre: string | null;
-  readonly motivo: string | null;
-  readonly acompanantes: number;
-  readonly entradaEn: string;
-  readonly salidaEn: string | null;
-  readonly creadoOffline: boolean;
-  readonly syncRev: number;
-  readonly actualizadoEn: string;
-}
 
 export function aVisitaDto(doc: VisitaDoc): VisitaDto {
   return {
@@ -109,6 +79,7 @@ export async function aplicarSyncVisitas(
         asignarCampos(nuevo, entrada);
         await nuevo.save();
         aplicados.push(entrada.uuid);
+        publicar('visita:creada', { visita: aVisitaDto(nuevo) });
         continue;
       }
 
@@ -118,6 +89,7 @@ export async function aplicarSyncVisitas(
         existente.syncRev += 1;
         await existente.save();
         aplicados.push(entrada.uuid);
+        publicar('visita:actualizada', { visita: aVisitaDto(existente) });
       } else {
         duplicados.push(entrada.uuid);
       }

@@ -12,7 +12,7 @@ Asegurar, sobre todo, dos cosas críticas:
 | Área | Herramienta |
 | --- | --- |
 | Unit / integración (TS) | **Vitest** |
-| Frontend Angular | **Vitest** + Angular Testing Utilities |
+| Frontend Angular | **Karma + Jasmine** (`ng test`) |
 | API | **Vitest** + Supertest |
 | Base de datos de test | `mongodb-memory-server` |
 | E2E (opcional) | Playwright |
@@ -64,13 +64,14 @@ describe('parseDni', () => {
 - `/sync`: idempotencia (mismo `uuid` dos veces → no duplica), lotes mixtos con errores.
 - Validación: body inválido → 400 con `VALIDATION_ERROR`.
 - Visitas: crear, listar con filtros, marcar salida.
-- Directorio: búsquedas por nombre/lote/patente.
+- Directorio: búsquedas por nombre/lote/patente, **importación CSV** (idempotente), **pull
+  incremental** (proyecciones locales), bajas (tombstone) y RBAC (403 para `guardia` al escribir).
 
 ## Tests del frontend
 
 - Componente de formulario: autocompleta al recibir `DniData`.
 - Servicio de escaneo: dado un payload, devuelve el `ParseResult` esperado.
-- Servicio de sync: encola offline y vacía el outbox al sincronizar.
+- Servicio de sync: encola offline, vacía el outbox y **aplica el pull del directorio** en Dexie.
 - Guard de rutas por rol.
 
 ## Tests de sincronización (integración)
