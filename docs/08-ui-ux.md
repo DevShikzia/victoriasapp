@@ -80,15 +80,17 @@ y **computadora de monitoreo** (vista de panel). El diseño prioriza velocidad y
 
 ### Administración (admin)
 
-- ABM de usuarios.
+- **Usuarios** (`/usuarios`): listado con estado activo/inactivo, alta, edición (rol, garita y
+  contraseña opcional), baja lógica y reactivación. El `usuario` no se puede cambiar una vez creado.
 - ABM de barrio, lotes, propietarios, familiares y vehículos.
 
 > **Estado (Fase 4):** el ABM del directorio está implementado en el PWA como ruta **`/directorio`**
 > (`features/directorio/`), accesible sólo para `admin`/`supervisor` (guard `requiereRol`). Tiene
 > pestañas por entidad (barrios, lotes, propietarios, familiares, vehículos), buscador, alta/edición/
 > borrado (online, contra la API) e importación de CSV (archivo o pegado). Después de cada cambio
-> dispara un sync para refrescar la caché offline. El ABM de usuarios en el PWA y la edición
-> **offline** del directorio quedan pendientes.
+> dispara un sync para refrescar la caché offline. El **ABM de usuarios** está en la ruta
+> **`/usuarios`** (sólo `admin`, `features/usuarios/`): listado con estado, alta/edición, baja lógica
+> y reactivación. Queda pendiente la edición **offline** del directorio.
 
 ## Estados y feedback
 

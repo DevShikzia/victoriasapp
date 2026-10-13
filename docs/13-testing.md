@@ -67,6 +67,8 @@ describe('parseDni', () => {
   `lote`, `dni`, `patente`) y marcar salida.
 - Directorio: búsquedas por nombre/lote/patente, **importación CSV** (idempotente), **pull
   incremental** (proyecciones locales), bajas (tombstone) y RBAC (403 para `guardia` al escribir).
+- Usuarios: RBAC (`admin` crea, `guardia` recibe 403), listado con `activo`, **baja lógica**
+  (`DELETE`) y **reactivación** (`PATCH { activo: true }`).
 
 ## Tests del frontend
 
@@ -77,7 +79,10 @@ describe('parseDni', () => {
   los valores vacíos y omitiendo los filtros ausentes.
 - ABM del directorio (`DirectorioAdminService`): listado con filtros, alta (`POST`), edición (`PATCH`),
   borrado (`DELETE`) e **importación CSV**.
+- ABM de usuarios (`UsuariosAdminService`): listado, alta (`POST`), edición (`PATCH`) y baja lógica
+  (`DELETE`).
 - Pantalla de directorio (`/directorio`): renderiza el encabezado, las pestañas y las listas.
+- Pantalla de usuarios (`/usuarios`): renderiza el encabezado y carga el listado.
 - Guard de rutas por rol.
 - Búsqueda difusa (`DatosService`): lotes, propietarios y vehículos en la caché local (sin tildes,
   en cualquier orden, con typos y por prefijo).

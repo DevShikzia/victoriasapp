@@ -1,0 +1,157 @@
+<section class="pantalla">
+  <header class="encabezado">
+    <h1>Usuarios</h1>
+    <button type="button" class="boton boton--suave" (click)="recargar()" [disabled]="cargando()">
+      {{ cargando() ? 'Cargando…' : 'Actualizar' }}
+    </button>
+  </header>
+
+  @if (mensaje(); as aviso) {
+    <p class="aviso aviso--ok" role="status">{{ aviso }}</p>
+  }
+  @if (error(); as falla) {
+    <p class="aviso aviso--error" role="alert">{{ falla }}</p>
+  }
+
+  <div class="editor">
+    <div class="editor-titulo">
+      <h2>
+        {{ editandoId() === null ? 'Nuevo usuario' : 'Editar usuario' }}
+      </h2>
+      <button type="button" class="boton boton--suave" (click)="nuevo()">Limpiar</button>
+    </div>
+
+    <div class="campos">
+      <label class="campo">
+        <span class="etiqueta">
+          Usuario
+          @if (editandoId() === null) {
+            <b aria-hidden="true">*</b>
+          }
+        </span>
+        <input
+          type="text"
+          autocomplete="off"
+          [readonly]="editandoId() !== null"
+          [ngModel]="valor('usuario')"
+          (ngModelChange)="actualizarCampo('usuario', $event)"
+        />
+      </label>
+
+      <label class="campo">
+        <span class="etiqueta">Nombre <b aria-hidden="true">*</b></span>
+        <input
+          type="text"
+          [ngModel]="valor('nombre')"
+          (ngModelChange)="actualizarCampo('nombre', $event)"
+        />
+      </label>
+
+      <label class="campo">
+        <span class="etiqueta">Rol</span>
+        <select [ngModel]="valor('rol')" (ngModelChange)="actualizarCampo('rol', $event)">
+          @for (rol of roles; track rol) {
+            <option [value]="rol">{{ rol }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="campo">
+        <span class="etiqueta">
+          Contraseña
+          @if (editandoId() === null) {
+            <b aria-hidden="true">*</b>
+          }
+        </span>
+        <input
+          type="password"
+          autocomplete="new-password"
+          [placeholder]="
+            editandoId() === null
+              ? 'Mínimo ' + minimoPassword + ' caracteres'
+              : 'Dejar vacío para no cambiarla'
+          "
+          [ngModel]="valor('password')"
+          (ngModelChange)="actualizarCampo('password', $event)"
+        />
+      </label>
+
+      <label class="campo">
+        <span class="etiqueta">Garita (opcional)</span>
+        <input
+          type="text"
+          [ngModel]="valor('garitaId')"
+          (ngModelChange)="actualizarCampo('garitaId', $event)"
+        />
+      </label>
+
+      @if (editandoId() !== null) {
+        <label class="campo campo--check">
+          <span class="etiqueta">Activo</span>
+          <input
+            type="checkbox"
+            [ngModel]="valor('activo')"
+            (ngModelChange)="actualizarCampo('activo', $event)"
+          />
+        </label>
+      }
+    </div>
+
+    <div class="editor-acciones">
+      <button
+        type="button"
+        class="boton boton--acento"
+        (click)="guardar()"
+        [disabled]="guardando()"
+      >
+        {{
+          guardando() ? 'Guardando…' : editandoId() === null ? 'Crear usuario' : 'Guardar cambios'
+        }}
+      </button>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <p class="vacio">Cargando…</p>
+  } @else if (items().length === 0) {
+    <p class="vacio">No hay usuarios.</p>
+  } @else {
+    <div class="tabla">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Nombre</th>
+            <th>Rol</th>
+            <th>Garita</th>
+            <th>Estado</th>
+            <th class="acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of items(); track u.id) {
+            <tr [class.inactivo]="!u.activo">
+              <td>{{ u.usuario }}</td>
+              <td>{{ u.nombre }}</td>
+              <td>{{ u.rol }}</td>
+              <td>{{ u.garitaId ?? '—' }}</td>
+              <td>{{ u.activo ? 'Activo' : 'Inactivo' }}</td>
+              <td class="acciones">
+                <button type="button" class="boton boton--suave" (click)="editar(u)">Editar</button>
+                @if (u.activo) {
+                  <button type="button" class="boton boton--peligro" (click)="desactivar(u)">
+                    Desactivar
+                  </button>
+                } @else {
+                  <button type="button" class="boton boton--suave" (click)="activar(u)">
+                    Activar
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

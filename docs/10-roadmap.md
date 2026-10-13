@@ -83,6 +83,8 @@ el problema real (el escaneo) cuanto antes.
       importación de CSV (archivo o pegado).
 - [x] **Búsqueda difusa offline** en el directorio cacheado: autocompletado de lote, propietario y
       patente (sin acentos, por prefijo y tolerante a errores de tipeo).
+- [x] **ABM de usuarios en el PWA** (`/usuarios`, sólo `admin`): listado con estado activo/inactivo,
+      alta, edición (rol, garita y contraseña opcional), baja lógica y reactivación.
 - [ ] Edición **offline** del directorio desde el PWA (encolar en el `outbox`).
 - [ ] Alta rápida desde la garita **offline** (encolar propietario nuevo en el `outbox`).
 
@@ -90,10 +92,10 @@ el problema real (el escaneo) cuanto antes.
 
 > **Estado:** la API del directorio (ABM, pull incremental, importador CSV y tombstones de borrado)
 > está implementada, y el canal Socket.IO expone `directorio:actualizado`. En el PWA existe el **panel**
-> (`/panel`) con pestañas **En vivo / Histórico**, filtros y export CSV, y la pantalla de
+> (`/panel`) con pestañas **En vivo / Histórico**, filtros y export CSV, la pantalla de
 > **administración del directorio** (`/directorio`, sólo admin/supervisor) con ABM online e importación
-> CSV; el sincronizador baja el directorio a IndexedDB y la búsqueda local es **difusa**.
-> Falta la **edición offline** del directorio (outbox) y el ABM de usuarios en el PWA.
+> CSV, y el **ABM de usuarios** (`/usuarios`, sólo admin). El sincronizador baja el directorio a
+> IndexedDB y la búsqueda local es **difusa**. Falta la **edición offline** del directorio (outbox).
 
 ## Fase 5 — Pulido
 

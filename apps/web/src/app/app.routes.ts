@@ -39,6 +39,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/directorio/directorio').then((m) => m.Directorio),
     title: 'Directorio · Victorias',
   },
+  {
+    path: 'usuarios',
+    canActivate: [authGuard, requiereRol('admin')],
+    loadComponent: () => import('./features/usuarios/usuarios').then((m) => m.Usuarios),
+    title: 'Usuarios · Victorias',
+  },
   { path: '', pathMatch: 'full', redirectTo: 'visitas' },
   { path: '**', redirectTo: 'visitas' },
 ];

@@ -35,6 +35,9 @@ export class App implements OnInit, OnDestroy {
     const rol = this.sesion.usuario()?.rol;
     return rol === 'admin' || rol === 'supervisor';
   });
+  protected readonly puedeAdministrarUsuarios = computed(
+    () => this.sesion.usuario()?.rol === 'admin',
+  );
 
   private readonly alVolverEnLinea = (): void => {
     this.enLinea.set(true);

@@ -160,6 +160,50 @@ describe('usuarios (RBAC)', () => {
     const token = (cuerpoJson(login) as CuerpoLogin).data.accessToken;
     await request(app).get('/api/users').set('Authorization', `Bearer ${token}`).expect(403);
   });
+
+  it('lista el estado activo, da de baja y reactiva', async () => {
+    const token = await tokenAdmin();
+
+    const alta = await request(app)
+      .post('/api/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        usuario: 'supervisor1',
+        nombre: 'Super Uno',
+        password: 'super12345',
+        rol: 'supervisor',
+      })
+      .expect(201);
+    const creado = (cuerpoJson(alta) as { data: { id: string; activo: boolean } }).data;
+    expect(creado.activo).toBe(true);
+
+    const activoDe = async (usuario: string): Promise<boolean | undefined> => {
+      const listado = await request(app)
+        .get('/api/users')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const usuarios = (cuerpoJson(listado) as { data: { usuario: string; activo: boolean }[] })
+        .data;
+      return usuarios.find((u) => u.usuario === usuario)?.activo;
+    };
+
+    expect(await activoDe('supervisor1')).toBe(true);
+
+    // DELETE es una baja lógica.
+    await request(app)
+      .delete(`/api/users/${creado.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(await activoDe('supervisor1')).toBe(false);
+
+    // PATCH lo vuelve a activar.
+    await request(app)
+      .patch(`/api/users/${creado.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ activo: true })
+      .expect(200);
+    expect(await activoDe('supervisor1')).toBe(true);
+  });
 });
 
 describe('sincronización de visitas', () => {

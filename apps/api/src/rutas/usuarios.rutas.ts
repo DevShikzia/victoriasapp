@@ -9,7 +9,7 @@ import type { Env } from '../config/env.js';
 import { errorConflicto, errorNoEncontrado } from '../lib/errores.js';
 import { asincrono, paramId, respuestaOk, validar } from '../lib/http.js';
 import { UsuarioModel } from '../models/usuario.model.js';
-import { aUsuarioPublico } from '../servicios/usuarios.service.js';
+import { aUsuarioAdmin } from '../servicios/usuarios.service.js';
 import { requerirRol } from '../auth/middleware.js';
 
 /** Rutas de gestión de usuarios (`/api/users`). Sólo `admin`. */
@@ -23,9 +23,10 @@ export function crearRutasUsuarios(env: Env): Router {
     ...soloAdmin,
     asincrono(async (_req, res) => {
       const docs = await UsuarioModel.find().sort({ usuario: 1 });
+      // (aUsuarioAdmin incluye `activo`; la API los lista todos, activos e inactivos.)
       respuestaOk(
         res,
-        docs.map((doc) => aUsuarioPublico(doc)),
+        docs.map((doc) => aUsuarioAdmin(doc)),
       );
     }),
   );
@@ -49,7 +50,7 @@ export function crearRutasUsuarios(env: Env): Router {
         garitaId: datos.garitaId === null ? null : new Types.ObjectId(datos.garitaId),
         activo: true,
       });
-      respuestaOk(res, aUsuarioPublico(creado), 201);
+      respuestaOk(res, aUsuarioAdmin(creado), 201);
     }),
   );
 
@@ -81,7 +82,7 @@ export function crearRutasUsuarios(env: Env): Router {
         doc.refreshTokenHash = null;
       }
       await doc.save();
-      respuestaOk(res, aUsuarioPublico(doc));
+      respuestaOk(res, aUsuarioAdmin(doc));
     }),
   );
 

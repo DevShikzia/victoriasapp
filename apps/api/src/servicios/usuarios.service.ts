@@ -1,4 +1,4 @@
-import type { UsuarioPublico } from '@victoriasapp/shared';
+import type { UsuarioAdmin, UsuarioPublico } from '@victoriasapp/shared';
 import type { HydratedDocument } from 'mongoose';
 
 import type { Usuario } from '../models/usuario.model.js';
@@ -14,4 +14,9 @@ export function aUsuarioPublico(doc: UsuarioDoc): UsuarioPublico {
     rol: doc.rol,
     garitaId: doc.garitaId === null ? null : doc.garitaId.toString(),
   };
+}
+
+/** Proyecta un usuario para el listado de administración (incluye `activo`). */
+export function aUsuarioAdmin(doc: UsuarioDoc): UsuarioAdmin {
+  return { ...aUsuarioPublico(doc), activo: doc.activo };
 }

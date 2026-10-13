@@ -183,7 +183,17 @@ Listado con filtros de búsqueda (ver tabla). Ejemplos: `GET /api/propietarios?q
 
 ## Usuarios (admin)
 
-### `GET /api/users`, `POST /api/users`, `PATCH /api/users/:id`, `DELETE /api/users/:id`
+Todas las rutas requieren rol `admin`. `UsuarioPublico` = `{ id, usuario, nombre, rol, garitaId }`;
+el listado agrega `activo` (`UsuarioAdmin`).
+
+| Método y ruta | Para qué |
+| --- | --- |
+| `GET /api/users` | Lista **todos** los usuarios (activos e inactivos), ordenados por `usuario`. Cada uno es `UsuarioAdmin` (incluye `activo`). |
+| `POST /api/users` | Alta: `usuario` (`[a-zA-Z0-9._-]{3,60}`), `nombre`, `password` (mínimo 8), `rol` (`admin`/`supervisor`/`guardia`) y `garitaId` opcional. |
+| `PATCH /api/users/:id` | Edita `nombre`, `rol`, `activo`, `garitaId` y, opcionalmente, `password` (al cambiarla se **revocan las sesiones**). El `usuario` no se puede cambiar. |
+| `DELETE /api/users/:id` | **Baja lógica**: deja `activo: false` y revoca las sesiones. Se reactiva con `PATCH { activo: true }`. |
+
+La pantalla del PWA es `/usuarios` (ver `docs/08-ui-ux.md`).
 
 ## Salud
 

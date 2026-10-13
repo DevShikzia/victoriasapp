@@ -54,9 +54,11 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
       entidad, buscador, alta/edición/borrado e importación CSV).
 - [x] **Búsqueda difusa offline** en el directorio cacheado: autocompletado de lote, propietario y
       patente tolerante a tildes, prefijos y errores de tipeo.
+- [x] **ABM de usuarios en el PWA** (`/usuarios`, sólo `admin`): listado con estado activo/inactivo,
+      alta, edición (rol, garita y contraseña opcional), baja lógica y reactivación.
 - [x] Tests: parser + esquemas + CSV/nombre + búsqueda difusa (`shared`, 49), integración de la API
-      con Mongo en memoria (`api`, 25) y flujo offline/sync + pull del directorio + ABM del
-      directorio + histórico + búsqueda difusa en el PWA (`web`, 21).
+      con Mongo en memoria (`api`, 26) y flujo offline/sync + pull del directorio + ABM del
+      directorio + histórico + búsqueda difusa + ABM de usuarios en el PWA (`web`, 26).
 
 ---
 

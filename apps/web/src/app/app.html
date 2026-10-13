@@ -21,6 +21,9 @@
       @if (puedeAdministrar()) {
         <a routerLink="/directorio" routerLinkActive="activo">Directorio</a>
       }
+      @if (puedeAdministrarUsuarios()) {
+        <a routerLink="/usuarios" routerLinkActive="activo">Usuarios</a>
+      }
     </nav>
 
     <span class="sesion">

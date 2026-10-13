@@ -59,6 +59,11 @@ export interface UsuarioPublico {
   readonly garitaId: string | null;
 }
 
+/** Usuario en el listado de administración (`/api/users`): agrega si está activo. */
+export interface UsuarioAdmin extends UsuarioPublico {
+  readonly activo: boolean;
+}
+
 /** Respuesta de un login exitoso. */
 export interface RespuestaLogin {
   readonly accessToken: string;
