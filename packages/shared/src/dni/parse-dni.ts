@@ -154,7 +154,7 @@ function validar(data: DniData): string[] {
 }
 
 function texto(valor: string | undefined): string {
-  return valor === undefined ? '' : valor;
+  return valor ?? '';
 }
 
 function fallo(formato: DniFormato | 'desconocido', raw: string, errores: readonly string[]): ParseResult {

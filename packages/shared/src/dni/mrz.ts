@@ -25,8 +25,8 @@ export function esMrz(raw: string): boolean {
   if (lineas.length < 3) {
     return false;
   }
-  const [primera] = lineas;
-  return primera !== undefined && primera.startsWith('ID');
+  const primera = lineas[0];
+  return primera?.startsWith('ID') ?? false;
 }
 
 /** Parsea una MRZ TD1. Devuelve `null` si no tiene la forma esperada. */
@@ -91,7 +91,7 @@ function desdeYYMMDD(yymmdd: string): string | null {
   const mm = yymmdd.slice(2, 4);
   const dd = yymmdd.slice(4, 6);
   const siglo = yy <= 30 ? 2000 : 1900;
-  return aFechaIso(`${siglo + yy}-${mm}-${dd}`);
+  return aFechaIso(`${String(siglo + yy)}-${mm}-${dd}`);
 }
 
 /** Dígito verificador ICAO 9303 (ponderación 7-3-1, módulo 10). */

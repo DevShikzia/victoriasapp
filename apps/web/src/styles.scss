@@ -1,0 +1,27 @@
+:root {
+  --acento: #14532d;
+  --texto-suave: #555;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  color: #1a1a1a;
+  background: #f4f6f7;
+  -webkit-text-size-adjust: 100%;
+}

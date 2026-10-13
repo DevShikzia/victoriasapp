@@ -5,14 +5,20 @@ el problema real (el escaneo) cuanto antes.
 
 ## Fase 0 — Base del proyecto y Modo captura
 
-- [ ] Estructura del monorepo (`apps/web`, `apps/api`, `packages/shared`).
-- [ ] Configuración de TypeScript estricto, ESLint (sin `any`) y Prettier.
-- [ ] Documentación (este repo `docs/`).
-- [ ] Scaffolding de la API (Express + Mongoose + health check).
-- [ ] **Modo captura:** pantalla que muestra el payload crudo de un escaneo.
-- [ ] Leer DNIs reales (viejo y nuevo) y fijar el parser.
+- [x] Estructura del monorepo (`apps/web`, `apps/api`, `packages/shared`).
+- [x] Configuración de TypeScript estricto, ESLint (sin `any`) y Prettier.
+- [x] Documentación (este repo `docs/`).
+- [x] Scaffolding de la API (Express + Mongoose + health check).
+- [x] **Modo captura:** pantalla que muestra el payload crudo de un escaneo
+      (cámara + modo foto + pegado manual), con interpretación del parser.
+- [ ] Leer DNIs reales (viejo y nuevo) y fijar el parser. ← **pendiente de muestras reales**
 
 **Entregable:** podemos ver exactamente qué trae cada código y queda documentado.
+
+> Estado: el PWA (`apps/web`) ya tiene la pantalla **Modo captura** funcionando con
+> `barcode-detector` (ZXing-WASM, con el `.wasm` servido localmente para offline) y
+> el parser de `@victoriasapp/shared`. Falta cargar DNIs reales para cerrar el formato
+> del QR del DNI electrónico.
 
 ## Fase 1 — Escáner + parser
 

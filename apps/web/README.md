@@ -1,31 +1,38 @@
-# @victoriasapp/web
+# @victoriasapp/web — PWA del guardia
 
-PWA Angular del proyecto: escáner de DNI, formulario de visitas y panel de monitoreo.
+Cliente Angular 20 (PWA, standalone) del sistema de control de acceso. Por ahora contiene el
+**Modo captura** (herramienta de diagnóstico del escaneo de DNI). Ver
+[`docs/03-escaneo.md`](../../docs/03-escaneo.md) y [`docs/08-ui-ux.md`](../../docs/08-ui-ux.md).
 
-> **Estado:** esta carpeta se generará con Angular CLI (`ng new`) durante la Fase 0/1
-> para que la configuración de Angular quede 100% estándar. Ver
-> [roadmap](../../docs/10-roadmap.md).
+## Requisitos
 
-## Reglas
+- Node.js 22 (ver `.nvmrc` en la raíz).
+- Dependencias instaladas **desde la raíz** del monorepo (`npm install`), no desde esta carpeta.
 
-- TypeScript **estricto**, sin `any` (ver [convenciones](../../docs/11-convenciones-de-codigo.md)).
-- Componentes standalone, `OnPush`.
-- Lógica de parseo siempre desde `@victoriasapp/shared` (nunca duplicada).
+## Comandos
 
-## Generación prevista
+Desde la raíz del repo (recomendado):
 
 ```bash
-# dentro de apps/
-npx @angular/cli@latest new web --style=scss --routing --ssr=false --standalone
+npm run dev:web          # ng serve en http://localhost:4200
+npm run build -w @victoriasapp/web
 ```
 
-Luego se agregan:
+O dentro de `apps/web`:
 
-- `@angular/pwa` (service worker + manifest).
-- Cliente de escaneo (`barcode-detector` / `zxing-wasm`).
-- IndexedDB (`dexie` o `idb`).
-- `socket.io-client`.
+```bash
+npm start                # ng serve
+npm run build            # build de producción (dist/web)
+npm run typecheck        # tsc --noEmit
+```
 
-## Pantallas
+`prestart` y `prebuild` copian el WASM de ZXing a `public/zxing/` automáticamente.
 
-Ver [docs/08-ui-ux.md](../../docs/08-ui-ux.md).
+## Notas
+
+- **Cámara:** requiere contexto seguro. Funciona en `localhost`; en un celular hay que servir la app
+  por **HTTPS**.
+- **WASM offline:** `scripts/copy-zxing-wasm.mjs` copia `zxing_reader.wasm` a `public/zxing/`
+  (ignorado en git). Se sirve desde el propio origen y se precachea con el service worker.
+- **Parser:** la lógica de DNI vive en `@victoriasapp/shared`, no acá.
+- **Sin `any`:** TypeScript estricto + ESLint (reglas en `eslint.config.mjs` de la raíz).

@@ -1,0 +1,111 @@
+<section class="captura">
+  <header class="encabezado">
+    <h1>Modo captura</h1>
+    <p class="ayuda">
+      Leé un DNI para ver el <strong>payload crudo</strong> y cómo lo interpreta el parser.
+      Sirve para validar los formatos: PDF417 viejo (reverso), PDF417 intermedio (frente),
+      QR nuevo y MRZ.
+    </p>
+  </header>
+
+  <div class="acciones">
+    @if (!camaraActiva()) {
+      <button type="button" class="boton" (click)="iniciarCamara()">Encender cámara</button>
+    } @else {
+      <button type="button" class="boton boton--peligro" (click)="detenerCamara()">Apagar cámara</button>
+    }
+
+    <label class="boton boton--suave">
+      Escanear foto
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        hidden
+        (change)="escanearFoto($event)"
+      />
+    </label>
+
+    <button
+      type="button"
+      class="boton boton--suave"
+      [disabled]="detecciones().length === 0"
+      (click)="limpiar()"
+    >
+      Limpiar
+    </button>
+  </div>
+
+  <div class="video" [class.video--activo]="camaraActiva()">
+    <video #video playsinline muted autoplay></video>
+    @if (!camaraActiva()) {
+      <p class="marcador">Cámara apagada</p>
+    }
+  </div>
+
+  @if (error(); as mensaje) {
+    <p class="error" role="alert">{{ mensaje }}</p>
+  }
+
+  <p class="estado">
+    Formatos soportados:
+    <span class="mono">{{ soportados().length > 0 ? soportados().join(', ') : 'consultando…' }}</span>
+  </p>
+
+  <form class="manual" (ngSubmit)="parsearManual()">
+    <label for="manual">Probar un payload a mano</label>
+    <textarea
+      id="manual"
+      name="manual"
+      rows="3"
+      placeholder="Pegá acá el texto del código…"
+      [ngModel]="manual()"
+      (ngModelChange)="manual.set($event)"
+    ></textarea>
+    <button type="submit" class="boton" [disabled]="manual().trim() === ''">Parsear</button>
+  </form>
+
+  <ul class="resultados">
+    @for (d of detecciones(); track d.id) {
+      <li class="tarjeta" [class.tarjeta--ok]="d.parse.ok" [class.tarjeta--mal]="!d.parse.ok">
+        <div class="tarjeta__cabecera">
+          <span class="etiqueta">{{ d.formato }}</span>
+          <span class="hora">{{ d.hora }}</span>
+        </div>
+
+        <pre class="raw">{{ d.raw }}</pre>
+
+        @if (d.parse.data; as data) {
+          <dl class="datos">
+            <dt>Apellido y nombre</dt>
+            <dd>{{ data.apellido }}, {{ data.nombre }}</dd>
+            <dt>DNI</dt>
+            <dd class="mono">{{ data.numeroDni }}</dd>
+            <dt>Sexo</dt>
+            <dd>{{ data.sexo ?? '—' }}</dd>
+            <dt>Nacimiento</dt>
+            <dd>{{ data.fechaNacimiento ?? '—' }}</dd>
+            <dt>Emisión</dt>
+            <dd>{{ data.fechaEmision ?? '—' }}</dd>
+            <dt>Vencimiento</dt>
+            <dd>{{ data.fechaVencimiento ?? '—' }}</dd>
+            <dt>N.º de trámite</dt>
+            <dd class="mono">{{ data.numeroTramite ?? '—' }}</dd>
+            <dt>Ejemplar</dt>
+            <dd>{{ data.ejemplar ?? '—' }}</dd>
+          </dl>
+        }
+
+        @if (d.parse.errores.length > 0) {
+          <ul class="errores">
+            @for (err of d.parse.errores; track err) {
+              <li>{{ err }}</li>
+            }
+          </ul>
+        }
+      </li>
+    } @empty {
+      <li class="vacio">Todavía no hay lecturas.</li>
+    }
+  </ul>
+</section>

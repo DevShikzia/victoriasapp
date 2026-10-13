@@ -51,11 +51,18 @@ verificadores, se valida y se corrigen lecturas dudosas.
 ## Modo captura
 
 Herramienta interna para desarrollo y diagnóstico. Muestra el **texto crudo** que devuelve cada
-código, sin parsear, con:
+código y, además, cómo lo interpreta `parseDni`.
 
-- Tipo de código detectado y valor `raw` completo.
-- Botón para copiar/exportar el crudo.
-- Registro de qué capa lo leyó.
+**Implementación actual** (`apps/web/src/app/features/captura`):
+
+- **Cámara en vivo** (`getUserMedia`, cámara trasera) con bucle de escaneo cada ~350 ms.
+- **Modo foto:** elegir/tomar una imagen y decodificarla a resolución completa.
+- **Pegado manual:** probar el parser con un payload de texto sin cámara.
+- Historial de las últimas 20 lecturas con `raw`, formato y campos parseados.
+
+Motor: `barcode-detector` (polyfill de `BarcodeDetector` sobre ZXing-WASM). El `.wasm` se copia a
+`public/zxing/` en el build (`apps/web/scripts/copy-zxing-wasm.mjs`) y se carga desde el propio
+origen, no desde el CDN, para que funcione sin internet. El service worker lo precachea.
 
 Sirve para:
 

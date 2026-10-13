@@ -36,6 +36,10 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-argument': 'error',
       '@typescript-eslint/no-unsafe-enum-comparison': 'error',
 
+      // Las clases con decorador (componentes/servicios de Angular) pueden
+      // quedar vacías legítimamente.
+      '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }],
+
       // Tipado explícito y consistente.
       '@typescript-eslint/explicit-function-return-type': [
         'warn',
