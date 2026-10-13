@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+out
+www
+coverage
+.angular
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+*.md

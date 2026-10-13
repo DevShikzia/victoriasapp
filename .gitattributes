@@ -1,0 +1,26 @@
+# Normaliza finales de línea a LF en el repositorio (importante en Windows).
+* text=auto eol=lf
+
+# Archivos que se tratan como binarios.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.wasm binary
+*.woff binary
+*.woff2 binary
+
+# Texto explícito.
+*.md text
+*.json text
+*.ts text
+*.js text
+*.mjs text
+*.css text
+*.html text
+
+# Diferencias de lock files.
+package-lock.json linguist-generated=true
