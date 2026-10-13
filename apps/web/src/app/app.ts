@@ -3,6 +3,7 @@ import {
   Component,
   type OnDestroy,
   type OnInit,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -30,6 +31,10 @@ export class App implements OnInit, OnDestroy {
   protected readonly usuario = this.sesion.usuario;
   protected readonly autenticado = this.sesion.autenticado;
   protected readonly sincronizando = this.sincro.sincronizando;
+  protected readonly puedeAdministrar = computed(() => {
+    const rol = this.sesion.usuario()?.rol;
+    return rol === 'admin' || rol === 'supervisor';
+  });
 
   private readonly alVolverEnLinea = (): void => {
     this.enLinea.set(true);

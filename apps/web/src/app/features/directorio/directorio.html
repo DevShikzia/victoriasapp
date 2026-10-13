@@ -1,0 +1,190 @@
+<section class="pantalla">
+  <header class="encabezado">
+    <h1>Directorio del barrio</h1>
+    <button type="button" class="boton boton--suave" (click)="recargar()" [disabled]="cargando()">
+      {{ cargando() ? 'Cargando…' : 'Actualizar' }}
+    </button>
+  </header>
+
+  <nav class="tabs">
+    @for (opcion of entidades; track opcion) {
+      <button
+        type="button"
+        class="tab"
+        [class.tab--activo]="opcion === entidad()"
+        (click)="cambiarEntidad(opcion)"
+      >
+        {{ nombrePlural(opcion) }}
+      </button>
+    }
+  </nav>
+
+  @if (mensaje(); as aviso) {
+    <p class="aviso aviso--ok" role="status">{{ aviso }}</p>
+  }
+  @if (error(); as falla) {
+    <p class="aviso aviso--error" role="alert">{{ falla }}</p>
+  }
+
+  <div class="barra-busqueda">
+    <input
+      type="search"
+      [placeholder]="busqueda().etiqueta"
+      [ngModel]="consulta()"
+      (ngModelChange)="consulta.set($event)"
+      (keyup.enter)="recargar()"
+    />
+    <button type="button" class="boton" (click)="recargar()">Buscar</button>
+  </div>
+
+  <div class="editor">
+    <div class="editor-titulo">
+      <h2>
+        {{
+          editandoId() === null
+            ? 'Nuevo ' + config().singular.toLowerCase()
+            : 'Editar ' + config().singular.toLowerCase()
+        }}
+      </h2>
+      <button type="button" class="boton boton--suave" (click)="nuevo()">Limpiar</button>
+    </div>
+
+    <div class="campos">
+      @for (campo of campos(); track campo.clave) {
+        <label class="campo">
+          <span class="etiqueta">
+            {{ campo.etiqueta }}
+            @if (campo.requerido) {
+              <b aria-hidden="true">*</b>
+            }
+          </span>
+          @switch (campo.tipo) {
+            @case ('booleano') {
+              <input
+                type="checkbox"
+                [ngModel]="valorModelo(campo.clave)"
+                (ngModelChange)="actualizarCampo(campo.clave, $event)"
+              />
+            }
+            @case ('seleccion') {
+              <select
+                [ngModel]="valorModelo(campo.clave)"
+                (ngModelChange)="actualizarCampo(campo.clave, $event)"
+              >
+                <option value="">—</option>
+                @for (opcion of opciones(campo); track opcion.id) {
+                  <option [value]="opcion.id">{{ etiquetaOpcionDe(campo, opcion) }}</option>
+                }
+              </select>
+            }
+            @default {
+              <input
+                type="text"
+                [ngModel]="valorModelo(campo.clave)"
+                (ngModelChange)="actualizarCampo(campo.clave, $event)"
+              />
+            }
+          }
+        </label>
+      }
+    </div>
+
+    <div class="editor-acciones">
+      <button
+        type="button"
+        class="boton boton--acento"
+        (click)="guardar()"
+        [disabled]="guardando()"
+      >
+        {{ guardando() ? 'Guardando…' : editandoId() === null ? 'Crear' : 'Guardar cambios' }}
+      </button>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <p class="vacio">Cargando…</p>
+  } @else if (items().length === 0) {
+    <p class="vacio">No hay {{ config().plural.toLowerCase() }} cargados.</p>
+  } @else {
+    <div class="tabla">
+      <table>
+        <thead>
+          <tr>
+            @for (columna of columnas(); track columna.clave) {
+              <th>{{ columna.etiqueta }}</th>
+            }
+            <th class="acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.id) {
+            <tr>
+              @for (columna of columnas(); track columna.clave) {
+                <td>{{ valorVisible(item, columna) }}</td>
+              }
+              <td class="acciones">
+                <button type="button" class="boton boton--suave" (click)="editar(item)">
+                  Editar
+                </button>
+                <button type="button" class="boton boton--peligro" (click)="eliminar(item)">
+                  Borrar
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <details class="importar">
+    <summary>Importar CSV del barrio</summary>
+    <p class="ayuda">
+      Columnas: <code>lote,propietario,telefono,patente,familiar,parentesco,descripcion</code>. La
+      cabecera es opcional.
+    </p>
+    <div class="campos">
+      <label class="campo">
+        <span class="etiqueta">Barrio</span>
+        <input type="text" [ngModel]="barrioImport()" (ngModelChange)="barrioImport.set($event)" />
+      </label>
+      <label class="campo">
+        <span class="etiqueta">Archivo CSV</span>
+        <input type="file" accept=".csv,text/csv" (change)="alElegirArchivo($event)" />
+      </label>
+      <label class="campo campo--ancho">
+        <span class="etiqueta">…o pegá el contenido</span>
+        <textarea
+          rows="6"
+          [ngModel]="csv()"
+          (ngModelChange)="csv.set($event)"
+          placeholder="lote,propietario,telefono,patente,familiar,parentesco,descripcion"
+        ></textarea>
+      </label>
+    </div>
+    <button
+      type="button"
+      class="boton boton--acento"
+      (click)="importar()"
+      [disabled]="importando() || csv().trim() === ''"
+    >
+      {{ importando() ? 'Importando…' : 'Importar' }}
+    </button>
+
+    @if (resultadoImport(); as resultado) {
+      <div class="resultado">
+        <p>
+          <b>{{ resultado.creados }}</b> creados · <b>{{ resultado.actualizados }}</b> actualizados
+          · {{ resultado.filas }} filas leídas.
+        </p>
+        @if (resultado.errores.length > 0) {
+          <ul>
+            @for (falla of resultado.errores; track falla.fila) {
+              <li>Fila {{ falla.fila }}: {{ falla.mensaje }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
+  </details>
+</section>

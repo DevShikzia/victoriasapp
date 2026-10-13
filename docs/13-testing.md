@@ -72,6 +72,9 @@ describe('parseDni', () => {
 - Componente de formulario: autocompleta al recibir `DniData`.
 - Servicio de escaneo: dado un payload, devuelve el `ParseResult` esperado.
 - Servicio de sync: encola offline, vacía el outbox y **aplica el pull del directorio** en Dexie.
+- ABM del directorio (`DirectorioAdminService`): listado con filtros, alta (`POST`), edición (`PATCH`),
+  borrado (`DELETE`) e **importación CSV**.
+- Pantalla de directorio (`/directorio`): renderiza el encabezado, las pestañas y las listas.
 - Guard de rutas por rol.
 
 ## Tests de sincronización (integración)

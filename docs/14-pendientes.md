@@ -20,8 +20,6 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
 
 ## 🟡 Deseables (no bloquean)
 
-- [ ] **ABM del directorio desde el PWA** (hoy el ABM existe sólo en la API). Pantalla de
-      administración para barrio, lotes, propietarios, familiares y vehículos.
 - [ ] **Edición offline del directorio** (alta rápida desde la garita): encolar en el `outbox` y
       resolver conflictos al sincronizar. En esta fase el ABM es **online** (admin/supervisor).
 - [x] **Export a CSV local** de las visitas abiertas — hecho en el **panel en vivo** (`/panel`).
@@ -52,10 +50,12 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
       vehículos, **pull incremental** `GET /api/directorio?desde=` con bajas (tombstones),
       **importador CSV**, canal **Socket.IO** (`/realtime`) con eventos `visita:creada`,
       `visita:actualizada` y `directorio:actualizado`. En el PWA: el sincronizador baja el directorio
-      a IndexedDB y el **panel en vivo** (`/panel`) muestra las visitas abiertas de todos los puestos
-      con export CSV.
+      a IndexedDB, el **panel en vivo** (`/panel`) muestra las visitas abiertas de todos los puestos
+      con export CSV y la pantalla **`/directorio`** (sólo `admin`/`supervisor`) hace el ABM online
+      del directorio (pestañas por entidad, buscador, alta/edición/borrado e importación CSV).
 - [x] Tests: parser + esquemas + CSV/nombre (`shared`, 34), integración de la API con Mongo en memoria
-      (`api`, 20) y flujo offline/sync + pull del directorio en el PWA (`web`, 11).
+      (`api`, 20) y flujo offline/sync + pull del directorio + ABM del directorio en el PWA
+      (`web`, 18).
 
 ---
 

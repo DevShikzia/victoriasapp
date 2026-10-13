@@ -18,6 +18,9 @@
       <a routerLink="/panel" routerLinkActive="activo">Panel</a>
       <a routerLink="/visita/nueva" routerLinkActive="activo">Nueva</a>
       <a routerLink="/captura" routerLinkActive="activo">Captura</a>
+      @if (puedeAdministrar()) {
+        <a routerLink="/directorio" routerLinkActive="activo">Directorio</a>
+      }
     </nav>
 
     <span class="sesion">

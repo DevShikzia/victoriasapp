@@ -62,6 +62,21 @@ Si el propietario no existe, el guardia (o el supervisor) puede **cargarlo al vu
 - Para mantener el histórico correcto, las visitas guardan **copias** de lote y propietario al momento
   del registro.
 
+### Administración desde el PWA (`/directorio`)
+
+La pantalla de administración (`apps/web/src/app/features/directorio/`) permite el ABM **online**
+contra la API, sólo para `admin`/`supervisor`:
+
+- Pestañas por entidad (barrios, lotes, propietarios, familiares, vehículos) con buscador.
+- Alta, edición y borrado (con confirmación). Los desplegables de referencias (`barrioId`, `loteId`,
+  `propietarioId`, …) salen de las listas cargadas al entrar.
+- Importación de CSV: subiendo un archivo o pegando el contenido.
+- Después de cada cambio, dispara un sync para bajar el directorio actualizado a IndexedDB.
+
+El módulo `DirectorioAdminService` (`core/directorio/directorio-admin.service.ts`) mapea cada entidad
+a su ruta de la API (`barrio` → `/api/barrios`, etc.) y el PWA valida del lado del servidor (esquemas
+`zod` compartidos). La edición **offline** del directorio (outbox) todavía no está implementada.
+
 ## Importación inicial
 
 Si el barrio ya tiene la lista en Excel/CSV, se provee un **importador** que crea barrio, lotes,

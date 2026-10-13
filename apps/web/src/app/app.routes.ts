@@ -1,6 +1,7 @@
 import type { Routes } from '@angular/router';
 
 import { authGuard } from './core/auth/auth.guard';
+import { requiereRol } from './core/auth/rol.guard';
 
 export const routes: Routes = [
   {
@@ -31,6 +32,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./features/captura/captura').then((m) => m.Captura),
     title: 'Modo captura · Victorias',
+  },
+  {
+    path: 'directorio',
+    canActivate: [authGuard, requiereRol('admin', 'supervisor')],
+    loadComponent: () => import('./features/directorio/directorio').then((m) => m.Directorio),
+    title: 'Directorio · Victorias',
   },
   { path: '', pathMatch: 'full', redirectTo: 'visitas' },
   { path: '**', redirectTo: 'visitas' },

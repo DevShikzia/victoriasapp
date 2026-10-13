@@ -75,16 +75,19 @@ el problema real (el escaneo) cuanto antes.
 - [x] Panel en la computadora con Socket.IO (tiempo real) — `/panel` en el PWA.
 - [x] Reportes y export desde el panel (export CSV de visitas abiertas).
 - [x] Importador CSV del directorio (`POST /api/directorio/importar`).
-- [ ] ABM del directorio **desde el PWA** (hoy es sólo API; falta la pantalla de administración).
+- [x] ABM del directorio **desde el PWA**: pantalla `/directorio` (sólo `admin`/`supervisor`) con
+      pestañas por entidad, buscador, alta/edición/borrado online, desplegables de referencias e
+      importación de CSV (archivo o pegado).
+- [ ] Edición **offline** del directorio desde el PWA (encolar en el `outbox`).
 - [ ] Alta rápida desde la garita **offline** (encolar propietario nuevo en el `outbox`).
 
 **Entregable:** varios puestos comparten datos y el monitoreo es en vivo.
 
 > **Estado:** la API del directorio (ABM, pull incremental, importador CSV y tombstones de borrado)
-> y el canal de tiempo real (namespace `/realtime`) están hechos y testeados. En el PWA, el
-> sincronizador ahora también baja el directorio a IndexedDB y existe el **panel en vivo** (`/panel`)
-> con las visitas abiertas de todos los puestos y export CSV. Falta la UI de administración del
-> directorio y la edición offline.
+> está implementada, y el canal Socket.IO expone `directorio:actualizado`. En el PWA existe el **panel
+> en vivo** (`/panel`) y la pantalla de **administración del directorio** (`/directorio`, sólo
+> admin/supervisor) con ABM online e importación CSV; el sincronizador baja el directorio a IndexedDB.
+> Falta la **edición offline** del directorio (outbox) y el ABM de usuarios en el PWA.
 
 ## Fase 5 — Pulido
 
