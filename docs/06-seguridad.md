@@ -22,6 +22,9 @@ Modelo de dos tokens:
 - El refresh token se guarda **hasheado** en el servidor (`refreshTokenHash`) para poder revocarlo.
 - `logout` invalida el refresh token.
 - Rotación de refresh token en cada renovación (detecta reutilización).
+- La cookie de refresh se limita a `Path=/api/auth` (no viaja en el resto de las llamadas).
+- Las vidas se configuran por entorno: `ACCESS_TOKEN_SEGUNDOS` (900 por defecto) y
+  `REFRESH_TOKEN_SEGUNDOS` (604800 por defecto).
 
 ## Offline y sesión
 
@@ -44,11 +47,29 @@ Como la app es offline-first, el guardia inicia sesión **una vez con red**. Des
 
 Enforcement en el backend por middleware; el front sólo oculta opciones (la verdad está en el back).
 
+## Alta del administrador (bootstrap)
+
+El primer admin **no** se crea desde la UI (no habría quién lo autorice): se crea desde el entorno al
+arrancar la API.
+
+| Variable | Para qué |
+| --- | --- |
+| `ADMIN_USUARIO` | Nombre de usuario (por defecto `admin`). |
+| `ADMIN_NOMBRE` | Nombre para mostrar. |
+| `ADMIN_PASSWORD` | Contraseña inicial. Si está definida y el usuario no existe, se crea. |
+| `ADMIN_FORZAR_RESET` | `true` resetea la contraseña y reactiva al admin existente (recuperar acceso). |
+
+- Es **idempotente**: correrlo otra vez no duplica ni pisa nada (salvo con `ADMIN_FORZAR_RESET=true`).
+- Sin `ADMIN_PASSWORD` no se crea ningún admin, y el arranque deja un aviso en el log.
+- La contraseña se guarda hasheada con **bcrypt** (cost 12).
+- **Recomendado en producción:** crear el admin, ingresar, cambiar la contraseña y luego quitar
+  `ADMIN_PASSWORD` del `.env` (o dejarlo con `ADMIN_FORZAR_RESET=false`).
+
 ## Validación
 
-- **Front:** Reactive Forms con validadores.
+- **Front:** formularios con validación (template-driven en el PWA).
 - **Back:** cada endpoint valida el body/query con un esquema **Zod** definido en `packages/shared`.
-- Rechazar propiedades no esperadas (`.strict()` cuando corresponda).
+- Rechazar propiedades no esperadas cuando corresponda.
 - Trim y normalización (mayúsculas en patente, etc.) antes de validar.
 
 ## Endurecimiento del backend

@@ -53,10 +53,19 @@ Nunca se comitea `.env`. Se provee un `.env.example` con la forma de cada variab
 | --- | --- |
 | `PORT` | Puerto de la API |
 | `MONGODB_URI` | Cadena de conexión a Mongo |
-| `JWT_ACCESS_SECRET` | Secreto del access token |
-| `JWT_REFRESH_SECRET` | Secreto del refresh token |
+| `JWT_ACCESS_SECRET` | Secreto del access token (mín. 32 caracteres) |
+| `JWT_REFRESH_SECRET` | Secreto del refresh token (mín. 32 caracteres) |
+| `ACCESS_TOKEN_SEGUNDOS` | Vida del access token en segundos (por defecto `900`) |
+| `REFRESH_TOKEN_SEGUNDOS` | Vida del refresh token en segundos (por defecto `604800`) |
 | `CORS_ORIGINS` | Orígenes permitidos (separados por coma) |
-| `NODE_ENV` | `development` \| `production` |
+| `NODE_ENV` | `development` \| `test` \| `production` |
+| `ADMIN_USUARIO` | Usuario administrador a crear (por defecto `admin`) |
+| `ADMIN_NOMBRE` | Nombre del administrador |
+| `ADMIN_PASSWORD` | Contraseña inicial del admin (si falta, no se crea) |
+| `ADMIN_FORZAR_RESET` | `true` resetea la contraseña del admin existente |
+
+Hay un **`.env.example`** listo para copiar en `apps/api/.env.example` (es el directorio desde el que
+corre la API, así que `dotenv` lee `apps/api/.env`).
 
 ## Entornos
 

@@ -3,6 +3,15 @@
  * Ver docs/07-offline-y-sincronizacion.md.
  */
 
+import { z } from 'zod';
+import { esquemaVisitaSync } from './visita.js';
+
+/** Cuerpo de `POST /api/sync`: lote de cambios creados offline. */
+export const esquemaSincronizacion = z.object({
+  visitas: z.array(esquemaVisitaSync).max(500).default([]),
+});
+export type SolicitudSync = z.infer<typeof esquemaSincronizacion>;
+
 export const ENTIDADES_SYNC = ['visita', 'propietario', 'vehiculo', 'lote', 'familiar'] as const;
 export type EntidadSync = (typeof ENTIDADES_SYNC)[number];
 

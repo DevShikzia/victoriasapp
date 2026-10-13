@@ -4,6 +4,7 @@
  */
 
 export * from './types/dominio.js';
+export * from './types/auth.js';
 export * from './types/visita.js';
 export * from './types/sync.js';
 export * from './types/directorio.js';

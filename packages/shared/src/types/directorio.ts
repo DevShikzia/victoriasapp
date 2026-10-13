@@ -6,6 +6,8 @@
  * la sincronización.
  */
 
+import type { RolUsuario } from './dominio.js';
+
 export interface LoteLocal {
   readonly uuid: string;
   readonly numero: string;
@@ -47,10 +49,14 @@ export interface VehiculoLocal {
 
 /** Datos de sesión recordados en el dispositivo. */
 export interface SesionLocal {
+  /** Nombre de usuario; es la clave primaria de la tabla `sesion`. */
   readonly usuario: string;
+  readonly id: string;
   readonly nombre: string;
-  readonly rol: string;
+  readonly rol: RolUsuario;
+  readonly garitaId: string | null;
   readonly accessToken: string;
+  /** Vencimiento del access token, en ISO. */
   readonly expiraEn: string;
 }
 

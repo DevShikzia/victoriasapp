@@ -1,0 +1,38 @@
+<section class="login">
+  <h1>Victorias · El Pare</h1>
+  <p class="ayuda">Ingresá con tu usuario para registrar visitas.</p>
+
+  <form (ngSubmit)="ingresar()">
+    <label>
+      Usuario
+      <input
+        name="usuario"
+        type="text"
+        autocomplete="username"
+        required
+        [(ngModel)]="usuario"
+        [disabled]="ocupado()"
+      />
+    </label>
+
+    <label>
+      Contraseña
+      <input
+        name="password"
+        type="password"
+        autocomplete="current-password"
+        required
+        [(ngModel)]="password"
+        [disabled]="ocupado()"
+      />
+    </label>
+
+    @if (error(); as mensaje) {
+      <p class="error" role="alert">{{ mensaje }}</p>
+    }
+
+    <button type="submit" [disabled]="!puedeEnviar">
+      {{ ocupado() ? 'Ingresando…' : 'Ingresar' }}
+    </button>
+  </form>
+</section>

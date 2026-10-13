@@ -56,6 +56,13 @@ export default tseslint.config(
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/only-throw-error': 'error',
 
+      // Parámetros/variables intencionalmente sin usar (por ejemplo `_next` en
+      // el middleware de errores de Express, que exige 4 argumentos).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
+
       // Calidad general.
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       eqeqeq: ['error', 'always'],

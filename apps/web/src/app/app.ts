@@ -6,9 +6,11 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
+import { SesionService } from './core/auth/sesion.service';
 import { DatosService } from './core/db/datos.service';
+import { SincronizadorService } from './core/sync/sincronizador.service';
 
 @Component({
   selector: 'app-root',
@@ -19,12 +21,19 @@ import { DatosService } from './core/db/datos.service';
 })
 export class App implements OnInit, OnDestroy {
   private readonly datos = inject(DatosService);
+  private readonly sesion = inject(SesionService);
+  private readonly sincro = inject(SincronizadorService);
+  private readonly router = inject(Router);
 
   protected readonly enLinea = signal(navigator.onLine);
   protected readonly pendientes = this.datos.pendientes;
+  protected readonly usuario = this.sesion.usuario;
+  protected readonly autenticado = this.sesion.autenticado;
+  protected readonly sincronizando = this.sincro.sincronizando;
 
   private readonly alVolverEnLinea = (): void => {
     this.enLinea.set(true);
+    void this.sincronizar();
   };
   private readonly alPerderConexion = (): void => {
     this.enLinea.set(false);
@@ -33,11 +42,28 @@ export class App implements OnInit, OnDestroy {
   ngOnInit(): void {
     window.addEventListener('online', this.alVolverEnLinea);
     window.addEventListener('offline', this.alPerderConexion);
-    void this.datos.refrescar();
+    void this.iniciar();
+  }
+
+  private async iniciar(): Promise<void> {
+    await this.sesion.inicializar();
+    await this.datos.refrescar();
+    if (this.sesion.autenticado()) {
+      await this.sincro.sincronizar();
+    }
   }
 
   ngOnDestroy(): void {
     window.removeEventListener('online', this.alVolverEnLinea);
     window.removeEventListener('offline', this.alPerderConexion);
+  }
+
+  protected async sincronizar(): Promise<void> {
+    await this.sincro.sincronizar();
+  }
+
+  protected async salir(): Promise<void> {
+    await this.sesion.logout();
+    await this.router.navigate(['/login']);
   }
 }

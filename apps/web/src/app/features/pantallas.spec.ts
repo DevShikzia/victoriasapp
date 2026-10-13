@@ -1,6 +1,8 @@
+import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
+import { Login } from './login/login';
 import { NuevaVisita } from './visita/nueva-visita';
 import { ListaVisitas } from './visitas/lista-visitas';
 
@@ -32,5 +34,20 @@ describe('Pantallas principales', () => {
     const texto = (fixture.nativeElement as HTMLElement).textContent;
     expect(texto).toContain('Visitas');
     expect(texto).toContain('por sincronizar');
+  });
+
+  it('renderiza la pantalla de login', async () => {
+    await TestBed.configureTestingModule({
+      imports: [Login],
+      providers: [provideRouter([]), provideHttpClient()],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(Login);
+    fixture.detectChanges();
+
+    const texto = (fixture.nativeElement as HTMLElement).textContent;
+    expect(texto).toContain('Ingresar');
+    expect(texto).toContain('Usuario');
+    expect(texto).toContain('Contraseña');
   });
 });

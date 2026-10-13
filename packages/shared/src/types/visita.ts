@@ -71,6 +71,59 @@ export function visitaAbierta(visita: Pick<Visita, 'salidaEn'>): boolean {
 }
 
 /**
+ * Visita tal como viaja al servidor en `POST /api/sync`.
+ * Es el subconjunto relevante de `Visita` (sin estado de sync local).
+ */
+export const esquemaVisitaSync = z.object({
+  uuid: z.string().trim().min(1).max(80),
+  tipo: z.enum(TIPOS_VISITA),
+  apellido: z.string().trim().min(1).max(80),
+  nombre: z.string().trim().min(1).max(80),
+  dni: z
+    .string()
+    .trim()
+    .regex(/^\d{7,8}$/, 'DNI inválido (7 u 8 dígitos)'),
+  fechaNacimiento: z.string().regex(RE_FECHA_ISO, 'Fecha inválida').nullable().default(null),
+  sexo: z.enum(SEXOS).nullable().default(null),
+  formatoDocumento: z.enum(FORMATOS_DNI).default('manual'),
+  documentoRaw: z.string().max(4000).nullable().default(null),
+  patente: z.string().trim().max(10).nullable().default(null),
+  loteNumero: z.string().trim().max(20).nullable().default(null),
+  propietarioNombre: z.string().trim().max(160).nullable().default(null),
+  motivo: z.string().trim().max(200).nullable().default(null),
+  acompanantes: z.number().int().min(0).max(50).default(0),
+  entradaEn: z.string().datetime(),
+  salidaEn: z.string().datetime().nullable().default(null),
+  creadoOffline: z.boolean().default(true),
+  actualizadoEn: z.string().datetime(),
+});
+export type VisitaSync = z.infer<typeof esquemaVisitaSync>;
+
+/** Convierte una visita local (PWA) al formato que espera la API. */
+export function aVisitaSync(visita: Visita): VisitaSync {
+  return {
+    uuid: visita.uuid,
+    tipo: visita.tipo,
+    apellido: visita.apellido,
+    nombre: visita.nombre,
+    dni: visita.dni,
+    fechaNacimiento: visita.fechaNacimiento,
+    sexo: visita.sexo,
+    formatoDocumento: visita.formatoDocumento,
+    documentoRaw: visita.documentoRaw,
+    patente: visita.patente,
+    loteNumero: visita.loteNumero,
+    propietarioNombre: visita.propietarioNombre,
+    motivo: visita.motivo,
+    acompanantes: visita.acompanantes,
+    entradaEn: visita.entradaEn,
+    salidaEn: visita.salidaEn,
+    creadoOffline: visita.creadoOffline,
+    actualizadoEn: visita.actualizadoEn,
+  };
+}
+
+/**
  * Genera un identificador único en el cliente (`crypto.randomUUID`).
  * Se usa como `uuid` de idempotencia para el sync.
  */

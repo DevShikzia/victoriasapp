@@ -3,6 +3,10 @@
 Base: `/api`. Todas las respuestas son JSON. Autenticación por **Bearer JWT** (ver
 [seguridad](./06-seguridad.md)).
 
+> **Estado (Fase 3):** implementado autenticación (`/api/auth/*`), RBAC, `/api/sync` idempotente,
+> `/api/visits` (`GET`, `GET /abiertas`, `POST /:id/salida`) y `/api/users` (ABM, sólo admin).
+> Las secciones de **Directorio** y **Tiempo real (Socket.IO)** quedan para la Fase 4.
+
 ## Convenciones
 
 - Versionado por header opcional `Accept-Version`; por ahora v1 implícita.

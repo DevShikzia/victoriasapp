@@ -12,11 +12,21 @@
     }
   </span>
 
-  <nav class="nav">
-    <a routerLink="/visitas" routerLinkActive="activo">Visitas</a>
-    <a routerLink="/visita/nueva" routerLinkActive="activo">Nueva</a>
-    <a routerLink="/captura" routerLinkActive="activo">Captura</a>
-  </nav>
+  @if (autenticado()) {
+    <nav class="nav">
+      <a routerLink="/visitas" routerLinkActive="activo">Visitas</a>
+      <a routerLink="/visita/nueva" routerLinkActive="activo">Nueva</a>
+      <a routerLink="/captura" routerLinkActive="activo">Captura</a>
+    </nav>
+
+    <span class="sesion">
+      <button type="button" class="btn-sync" (click)="sincronizar()" [disabled]="sincronizando()">
+        {{ sincronizando() ? 'Sincronizando…' : 'Sincronizar' }}
+      </button>
+      <span class="quien">{{ usuario()?.nombre }} · {{ usuario()?.rol }}</span>
+      <button type="button" class="btn-salir" (click)="salir()">Salir</button>
+    </span>
+  }
 </header>
 
 <main class="contenido">

@@ -41,3 +41,11 @@ export class BaseLocal extends Dexie {
     });
   }
 }
+
+let instancia: BaseLocal | null = null;
+
+/** Devuelve la única instancia de la base local (evita abrir la DB dos veces). */
+export function obtenerBaseLocal(): BaseLocal {
+  instancia ??= new BaseLocal();
+  return instancia;
+}

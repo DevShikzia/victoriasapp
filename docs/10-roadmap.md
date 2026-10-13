@@ -50,13 +50,22 @@ el problema real (el escaneo) cuanto antes.
 
 ## Fase 3 — API + Mongo + sync + login
 
-- [ ] Endpoints de visitas y `/sync` idempotente.
-- [ ] Autenticación JWT (access + refresh), RBAC.
-- [ ] Directorio de la API.
-- [ ] Sincronización desde el PWA.
-- [ ] Endurecimiento de seguridad.
+- [x] Endpoints de visitas y `/sync` idempotente.
+- [x] Autenticación JWT (access + refresh), RBAC.
+- [x] Alta del administrador por variables de entorno.
+- [x] Sincronización desde el PWA.
+- [~] Directorio de la API (queda para la Fase 4; `/api/visits` y `/api/users` ya existen).
+- [~] Endurecimiento de seguridad (helmet, CORS, rate limit y validación Zod listos; faltan logs/retención).
 
 **Entregable:** los registros llegan a Mongo y hay login.
+
+> Estado: implementado. `apps/api` tiene `POST /api/auth/login|refresh|logout`, `GET /api/auth/me`
+> (access token corto + refresh en cookie `httpOnly` con rotación), **RBAC** (`admin`/`supervisor`/`guardia`),
+> `POST /api/sync` idempotente por `uuid`, `GET /api/visits`, `GET /api/visits/abiertas`,
+> `POST /api/visits/:id/salida` y ABM de usuarios (sólo `admin`). El administrador se crea desde el
+> entorno (`ADMIN_PASSWORD`, ver [seguridad](./06-seguridad.md)). El PWA sumó **pantalla de login**,
+> guard de rutas, interceptor con `Bearer` + refresh automático y un **sincronizador** que vacía el
+> outbox al recuperar conexión. Tests de integración con Mongo en memoria.
 
 ## Fase 4 — Directorio + panel en vivo
 

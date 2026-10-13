@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+/** Booleano tolerante a las formas típicas de las variables de entorno. */
+const esquemaBooleano = z
+  .enum(['true', 'false', '1', '0'])
+  .transform((valor) => valor === 'true' || valor === '1');
+
 /**
  * Esquema y validación de las variables de entorno.
  * Falla el arranque si falta algo obligatorio (mejor que romper en runtime).
@@ -11,6 +16,31 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET debe tener al menos 32 caracteres'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET debe tener al menos 32 caracteres'),
   CORS_ORIGINS: z.string().default('http://localhost:4200'),
+
+  /** Vida de los tokens, en segundos. */
+  ACCESS_TOKEN_SEGUNDOS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(15 * 60),
+  REFRESH_TOKEN_SEGUNDOS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(7 * 24 * 60 * 60),
+
+  /**
+   * Alta automática del administrador al arrancar (ver docs/06-seguridad.md).
+   *
+   * - Si `ADMIN_PASSWORD` está definida y el usuario no existe → se crea.
+   * - Si `ADMIN_FORZAR_RESET=true` y el usuario existe → se resetea su contraseña
+   *   (útil para recuperar el acceso si te quedaste afuera).
+   * - Si no se define `ADMIN_PASSWORD`, no se toca nada.
+   */
+  ADMIN_USUARIO: z.string().trim().min(3).max(60).default('admin'),
+  ADMIN_NOMBRE: z.string().trim().min(1).max(120).default('Administrador'),
+  ADMIN_PASSWORD: z.string().min(8, 'ADMIN_PASSWORD debe tener al menos 8 caracteres').optional(),
+  ADMIN_FORZAR_RESET: esquemaBooleano.default('false'),
 });
 
 export type Env = z.infer<typeof envSchema>;

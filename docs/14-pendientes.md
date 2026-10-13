@@ -34,7 +34,13 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
 - [x] **Fase 2 — registro de visita offline:** formulario con escáner de DNI incrustado,
       persistencia en IndexedDB (Dexie), cola `outbox` transaccional, autocompletado de dueño/lote
       por patente o lote, listado de visitas con estado de sync y marcado de salida.
-- [x] Tests: parser + validación de visita (`shared`, 12) y flujo offline (`web`, 5).
+- [x] **Fase 3 — API + login + sync:** JWT (access corto + refresh en cookie `httpOnly` con rotación),
+      RBAC (`admin`/`supervisor`/`guardia`), **alta del administrador por variables de entorno**,
+      `POST /api/sync` idempotente por `uuid`, endpoints de visitas y ABM de usuarios (admin).
+      En el PWA: pantalla de **login**, guard de rutas, interceptor con `Bearer` + refresh automático
+      y **sincronizador** que vacía el outbox al volver la red.
+- [x] Tests: parser + esquemas (`shared`, 19), integración de la API con Mongo en memoria (`api`, 13)
+      y flujo offline/sync en el PWA (`web`, 10).
 
 ---
 

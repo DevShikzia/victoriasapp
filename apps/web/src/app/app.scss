@@ -69,6 +69,38 @@
   }
 }
 
+.sesion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+
+  .quien {
+    opacity: 0.85;
+    font-weight: 600;
+  }
+
+  button {
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: transparent;
+    color: #fff;
+    border-radius: 0.4rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .btn-sync {
+    background: rgba(255, 255, 255, 0.16);
+  }
+}
+
 .contenido {
   padding-bottom: 2rem;
 }

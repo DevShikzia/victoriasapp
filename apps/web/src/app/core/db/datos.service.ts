@@ -1,14 +1,16 @@
 import { Injectable, signal } from '@angular/core';
 import type {
+  ErrorSync,
   LoteLocal,
   NuevaVisita,
   PropietarioLocal,
   VehiculoLocal,
   Visita,
+  VisitaSync,
 } from '@victoriasapp/shared';
-import { crearIdLocal, normalizarPatente } from '@victoriasapp/shared';
+import { crearIdLocal, esquemaVisitaSync, normalizarPatente } from '@victoriasapp/shared';
 
-import { BaseLocal } from './base-local';
+import { obtenerBaseLocal } from './base-local';
 import { datosDeEjemplo } from './seed';
 
 /**
@@ -18,7 +20,7 @@ import { datosDeEjemplo } from './seed';
  */
 @Injectable({ providedIn: 'root' })
 export class DatosService {
-  private readonly db = new BaseLocal();
+  private readonly db = obtenerBaseLocal();
 
   /** Visitas locales, más recientes primero. */
   readonly visitas = signal<readonly Visita[]>([]);
@@ -98,7 +100,76 @@ export class DatosService {
     await this.refrescar();
   }
 
-  // --- Directorio (caché local) ---
+  // --- Sincronización (outbox → API) ---
+
+  /**
+   * Devuelve las visitas con cambios pendientes, ya deduplicadas por `uuid`
+   * (gana la versión más nueva) y validadas contra el esquema de sync.
+   */
+  async visitasPendientesSync(): Promise<readonly VisitaSync[]> {
+    const items = await this.db.outbox.where('entidad').equals('visita').toArray();
+    const porUuid = new Map<string, VisitaSync>();
+    for (const item of items) {
+      const resultado = esquemaVisitaSync.safeParse(item.payload);
+      if (!resultado.success) {
+        continue;
+      }
+      const actual = porUuid.get(resultado.data.uuid);
+      if (actual === undefined || resultado.data.actualizadoEn > actual.actualizadoEn) {
+        porUuid.set(resultado.data.uuid, resultado.data);
+      }
+    }
+    return [...porUuid.values()];
+  }
+
+  /** Marca las visitas ya aplicadas como sincronizadas y limpia su outbox. */
+  async confirmarSincronizacion(uuids: readonly string[]): Promise<void> {
+    if (uuids.length === 0) {
+      return;
+    }
+    await this.db.transaction('rw', this.db.visitas, this.db.outbox, async () => {
+      for (const uuid of uuids) {
+        const visita = await this.db.visitas.get(uuid);
+        if (visita !== undefined) {
+          await this.db.visitas.put({
+            ...visita,
+            estadoSync: 'sincronizada',
+            ultimoErrorSync: null,
+          });
+        }
+      }
+      const items = await this.db.outbox.where('entidad').equals('visita').toArray();
+      const ids = items.filter((item) => uuids.includes(item.uuid)).map((item) => item.id);
+      if (ids.length > 0) {
+        await this.db.outbox.bulkDelete(ids);
+      }
+    });
+    await this.refrescar();
+  }
+
+  /** Anota los errores de sincronización devueltos por la API. */
+  async registrarErroresSync(errores: readonly ErrorSync[]): Promise<void> {
+    if (errores.length === 0) {
+      return;
+    }
+    await this.db.transaction('rw', this.db.outbox, this.db.visitas, async () => {
+      for (const error of errores) {
+        const items = await this.db.outbox.where('uuid').equals(error.uuid).toArray();
+        for (const item of items) {
+          await this.db.outbox.put({
+            ...item,
+            intentos: item.intentos + 1,
+            ultimoError: error.mensaje,
+          });
+        }
+        const visita = await this.db.visitas.get(error.uuid);
+        if (visita !== undefined) {
+          await this.db.visitas.put({ ...visita, ultimoErrorSync: error.mensaje });
+        }
+      }
+    });
+    await this.refrescar();
+  }
 
   async buscarLotes(consulta: string): Promise<readonly LoteLocal[]> {
     const q = consulta.trim().toLowerCase();
