@@ -23,7 +23,10 @@
     "postinstall": "npm run build -w @victoriasapp/shared",
     "dev:shared": "tsc -p packages/shared/tsconfig.json --watch --preserveWatchOutput",
     "dev:api": "npm run dev -w @victoriasapp/api",
-    "dev:web": "npm run start -w @victoriasapp/web"
+    "dev:web": "npm run start -w @victoriasapp/web",
+    "dev:web:lan": "npm run start:lan -w @victoriasapp/web",
+    "dev:web:https": "npm run start:https -w @victoriasapp/web",
+    "certs": "npm run certs -w @victoriasapp/web"
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",

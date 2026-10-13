@@ -53,6 +53,9 @@ ehthumbs.db
 data/
 mongo-data/
 
+# Certificados locales de desarrollo (mkcert)
+certs/
+
 # Otros
 *.local
 .eslintcache

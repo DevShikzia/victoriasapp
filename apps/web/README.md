@@ -15,6 +15,9 @@ Desde la raíz del repo (recomendado):
 
 ```bash
 npm run dev:web          # ng serve en http://localhost:4200
+npm run dev:web:lan      # ng serve expuesto a la red (celular por HTTP)
+npm run certs            # genera certificados locales con mkcert (apps/web/certs/)
+npm run dev:web:https    # ng serve por HTTPS (cámara en el celular)
 npm run build -w @victoriasapp/web
 ```
 
@@ -22,11 +25,18 @@ O dentro de `apps/web`:
 
 ```bash
 npm start                # ng serve
+npm run start:lan        # ng serve --host 0.0.0.0
+npm run certs            # genera apps/web/certs/ (requiere mkcert)
+npm run start:https      # ng serve --host 0.0.0.0 --ssl
 npm run build            # build de producción (dist/web)
 npm run typecheck        # tsc --noEmit
 ```
 
 `prestart` y `prebuild` copian el WASM de ZXing a `public/zxing/` automáticamente.
+
+El dev server proxya `/api` y `/socket.io` hacia la API (`proxy.conf.json`); el front usa el mismo
+origen (`window.location.origin`), así que sirve `npm run dev:api` + el PWA desde la PC o el celular
+sin tocar CORS ni IPs. Ver [`docs/12-git-y-deploy.md`](../../docs/12-git-y-deploy.md).
 
 ## Notas
 

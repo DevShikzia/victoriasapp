@@ -82,6 +82,23 @@ npm run dev -w apps/api        # levanta la API
 npm run start -w apps/web      # levanta el PWA
 ```
 
+### Probar desde el celular (misma red Wi‑Fi)
+
+El PWA y la API viajan por **el mismo origen**: el dev server de Angular hace de proxy hacia la API
+(`apps/web/proxy.conf.json`), así que no hace falta tocar CORS ni la URL de la API al cambiar de
+dispositivo (`CONFIG.apiBaseUrl` usa `window.location.origin`).
+
+```bash
+npm run dev:api        # API (escucha en la red)
+npm run dev:web:lan    # PWA expuesto a la red (HTTP)
+```
+
+En el celular (misma red Wi‑Fi): `http://<IP-de-la-PC>:4200`.
+
+> Si no entra, permití los puertos `4200` y `3000` en el firewall de Windows.
+
+La cámara **no** funciona por HTTP: necesitás HTTPS (ver "HTTPS para desarrollo").
+
 ## HTTPS (obligatorio para la cámara)
 
 El celular **sólo** accede a la cámara en un contexto seguro:
@@ -94,6 +111,19 @@ Opciones para producción:
 1. **VPS + dominio + Let's Encrypt** (recomendado, simple).
 2. Plataforma con HTTPS automático (Render, Railway, Fly.io, etc.).
 3. Túnel (Cloudflare Tunnel) hacia un servidor propio.
+
+### HTTPS para desarrollo (mkcert)
+
+Para probar la **cámara** desde el celular en tu red, serví el PWA por HTTPS local con `mkcert`:
+
+```bash
+npm run certs          # genera apps/web/certs/ (requiere mkcert; Windows: winget install FiloSottile.mkcert)
+npm run dev:web:https  # ng serve --ssl con ese certificado
+```
+
+`mkcert -install` crea una CA de confianza local; instalá `rootCA.pem` en el celular (Android:
+Ajustes > Seguridad > Instalar certificado > CA). Después abrí `https://<IP-de-la-PC>:4200`. El proxy
+sigue mandando la API a `http://localhost:3000`, así que sólo el PWA va por TLS.
 
 El frontend se sirve como estáticos; la API detrás de un proxy (`nginx` o el del proveedor).
 
