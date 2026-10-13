@@ -71,7 +71,8 @@ el problema real (el escaneo) cuanto antes.
 
 - [x] ABM de barrio, lotes, propietarios, familiares y vehículos (API, admin/supervisor).
 - [x] Búsquedas (nombre / lote / patente) — API online; en el PWA la caché local ya guarda el
-      directorio por pull incremental (la búsqueda offline usa los datos cacheados de Fase 2).
+      directorio por pull incremental y la búsqueda **offline es difusa** (tolerante a tildes,
+      prefijos y errores de tipeo).
 - [x] Panel en la computadora con Socket.IO (tiempo real) — `/panel` en el PWA.
 - [x] Reportes y export desde el panel: CSV de las visitas abiertas y del histórico.
 - [x] Panel con **filtros e histórico**: búsqueda por texto libre, rango de fechas de entrada,
@@ -80,16 +81,18 @@ el problema real (el escaneo) cuanto antes.
 - [x] ABM del directorio **desde el PWA**: pantalla `/directorio` (sólo `admin`/`supervisor`) con
       pestañas por entidad, buscador, alta/edición/borrado online, desplegables de referencias e
       importación de CSV (archivo o pegado).
+- [x] **Búsqueda difusa offline** en el directorio cacheado: autocompletado de lote, propietario y
+      patente (sin acentos, por prefijo y tolerante a errores de tipeo).
 - [ ] Edición **offline** del directorio desde el PWA (encolar en el `outbox`).
 - [ ] Alta rápida desde la garita **offline** (encolar propietario nuevo en el `outbox`).
 
 **Entregable:** varios puestos comparten datos y el monitoreo es en vivo.
 
 > **Estado:** la API del directorio (ABM, pull incremental, importador CSV y tombstones de borrado)
-> está implementada, y el canal Socket.IO expone `directorio:actualizado`. En el PWA existe el **panel
-> en vivo** (`/panel`) y la pantalla de **administración del directorio** (`/directorio`, sólo
-> admin/supervisor) con ABM online e importación CSV; el sincronizador baja el directorio a IndexedDB.
-> El **panel** (`/panel`) ya tiene pestañas **En vivo / Histórico**, con filtros y export CSV.
+> está implementada, y el canal Socket.IO expone `directorio:actualizado`. En el PWA existe el **panel**
+> (`/panel`) con pestañas **En vivo / Histórico**, filtros y export CSV, y la pantalla de
+> **administración del directorio** (`/directorio`, sólo admin/supervisor) con ABM online e importación
+> CSV; el sincronizador baja el directorio a IndexedDB y la búsqueda local es **difusa**.
 > Falta la **edición offline** del directorio (outbox) y el ABM de usuarios en el PWA.
 
 ## Fase 5 — Pulido

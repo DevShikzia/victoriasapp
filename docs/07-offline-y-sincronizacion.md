@@ -106,6 +106,9 @@ La parte local está en el PWA:
 - `apps/web/src/app/core/db/datos.service.ts` — guardar visita / marcar salida / buscar en el
   directorio. Cada cambio escribe en la entidad **y** en `outbox` dentro de una transacción.
   También `aplicarDirectorio(pull)`: hace `bulkPut` de las proyecciones locales y procesa las bajas.
+- Búsqueda **difusa** local (`buscarLotes` / `buscarPropietarios` / `buscarVehiculos`) apoyada en
+  `ordenarPorCoincidencia` de `packages/shared`: sin acentos, por prefijo de palabra y tolerante a
+  errores de tipeo.
 - `apps/web/src/app/features/visita/` — formulario de nueva visita + escáner de DNI incrustado.
 - `apps/web/src/app/features/visitas/` — listado con estado de sync y marcado de salida.
 - `apps/web/src/app/core/sync/sincronizador.service.ts` — sube el `outbox` (`POST /api/sync`) **y**

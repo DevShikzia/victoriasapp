@@ -126,12 +126,23 @@
           <input
             type="text"
             name="patente"
+            list="lista-patentes"
             autocomplete="off"
             placeholder="AB123CD"
             [ngModel]="modelo().patente"
-            (ngModelChange)="actualizar('patente', $event)"
+            (ngModelChange)="alCambiarPatente($event)"
             (blur)="alSalirDePatente()"
           />
+          <datalist id="lista-patentes">
+            @for (v of sugerenciasVehiculos(); track v.uuid) {
+              <option [value]="v.patente">
+                {{ v.propietarioNombre ?? 'Sin dueño' }}
+                @if (v.loteNumero) {
+                  · Lote {{ v.loteNumero }}
+                }
+              </option>
+            }
+          </datalist>
         </label>
 
         <label>

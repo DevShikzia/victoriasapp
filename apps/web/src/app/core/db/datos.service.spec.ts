@@ -67,4 +67,24 @@ describe('DatosService (offline, IndexedDB)', () => {
     expect(propietarios.length).toBe(1);
     expect(propietarios[0]?.loteNumero).toBe('12');
   });
+
+  it('busca de forma difusa: sin tildes, en cualquier orden, con typos y por prefijo', async () => {
+    await servicio.cargarEjemplo();
+
+    // "alamos" encuentra la calle "Los Álamos" (sin tilde).
+    const porCalle = await servicio.buscarLotes('alamos');
+    expect(porCalle.map((l) => l.numero)).toContain('42');
+
+    // Términos en cualquier orden.
+    const porNombre = await servicio.buscarPropietarios('ana perez');
+    expect(porNombre.map((p) => p.apellido)).toContain('PEREZ');
+
+    // Typo (Levenshtein): "gomze" encuentra GOMEZ.
+    const porTypo = await servicio.buscarPropietarios('gomze');
+    expect(porTypo.map((p) => p.apellido)).toContain('GOMEZ');
+
+    // Patente incompleta (prefijo).
+    const porPatente = await servicio.buscarVehiculos('ab123');
+    expect(porPatente.map((v) => v.patente)).toContain('AB123CD');
+  });
 });

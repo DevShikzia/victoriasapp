@@ -15,6 +15,7 @@ import {
   crearIdLocal,
   esquemaVisitaSync,
   normalizarPatente,
+  ordenarPorCoincidencia,
 } from '@victoriasapp/shared';
 
 import { obtenerBaseLocal } from './base-local';
@@ -178,31 +179,50 @@ export class DatosService {
     await this.refrescar();
   }
 
+  /**
+   * Busca lotes en la caché local por número, calle o propietario.
+   * La coincidencia es **difusa** (sin acentos, por prefijo y tolerante a
+   * errores de tipeo); devuelve los más relevantes primero.
+   */
   async buscarLotes(consulta: string): Promise<readonly LoteLocal[]> {
-    const q = consulta.trim().toLowerCase();
+    const q = consulta.trim();
     if (q === '') {
       return [];
     }
     const lotes = await this.db.lotes.toArray();
-    return lotes
-      .filter(
-        (l) => l.numero.toLowerCase().includes(q) || (l.calle ?? '').toLowerCase().includes(q),
-      )
-      .slice(0, 8);
+    return ordenarPorCoincidencia(lotes, q, (l) => [l.numero, l.calle, l.propietarioNombre]);
   }
 
+  /** Busca propietarios por apellido, nombre, nombre completo o lote. Difusa. */
   async buscarPropietarios(consulta: string): Promise<readonly PropietarioLocal[]> {
-    const q = consulta.trim().toLowerCase();
+    const q = consulta.trim();
     if (q === '') {
       return [];
     }
     const propietarios = await this.db.propietarios.toArray();
-    return propietarios
-      .filter((p) => {
-        const nombreCompleto = `${p.apellido} ${p.nombre}`.toLowerCase();
-        return nombreCompleto.includes(q) || (p.loteNumero ?? '') === q;
-      })
-      .slice(0, 8);
+    return ordenarPorCoincidencia(propietarios, q, (p) => [
+      p.apellido,
+      p.nombre,
+      `${p.apellido}, ${p.nombre}`,
+      `${p.nombre} ${p.apellido}`,
+      p.loteNumero,
+    ]);
+  }
+
+  /** Busca vehículos por patente, dueño, marca, modelo o lote. Difusa. */
+  async buscarVehiculos(consulta: string): Promise<readonly VehiculoLocal[]> {
+    const q = consulta.trim();
+    if (q === '') {
+      return [];
+    }
+    const vehiculos = await this.db.vehiculos.toArray();
+    return ordenarPorCoincidencia(vehiculos, q, (v) => [
+      v.patente,
+      v.propietarioNombre,
+      v.marca,
+      v.modelo,
+      v.loteNumero,
+    ]);
   }
 
   async propietarioPorNombre(nombre: string): Promise<PropietarioLocal | undefined> {

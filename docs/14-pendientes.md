@@ -24,8 +24,6 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
       resolver conflictos al sincronizar. En esta fase el ABM es **online** (admin/supervisor).
 - [x] **Export a CSV** desde el panel (`/panel`): visitas abiertas e **histórico completo** con
       filtros de texto, rango de fechas, estado (dentro/fuera) y lote.
-- [ ] **Búsqueda difusa offline** en el directorio cacheado (hoy la búsqueda local es por
-      coincidencia directa sobre los datos de Fase 2).
 - [ ] **Lista de propietarios / lotes real del barrio** (Excel o carga por la app) para poblar el
       directorio. Mientras tanto, hay datos de ejemplo para probar (ver "Datos de ejemplo" abajo).
 - [ ] Probar el **panel en vivo con varios dispositivos** reales conectados (el canal está testeado a
@@ -54,9 +52,11 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
       **histórico** filtrable (texto, fechas, estado, lote) con export CSV; la pantalla
       **`/directorio`** (sólo `admin`/`supervisor`) hace el ABM online del directorio (pestañas por
       entidad, buscador, alta/edición/borrado e importación CSV).
-- [x] Tests: parser + esquemas + CSV/nombre (`shared`, 34), integración de la API con Mongo en memoria
-      (`api`, 25) y flujo offline/sync + pull del directorio + ABM del directorio + histórico en el
-      PWA (`web`, 20).
+- [x] **Búsqueda difusa offline** en el directorio cacheado: autocompletado de lote, propietario y
+      patente tolerante a tildes, prefijos y errores de tipeo.
+- [x] Tests: parser + esquemas + CSV/nombre + búsqueda difusa (`shared`, 49), integración de la API
+      con Mongo en memoria (`api`, 25) y flujo offline/sync + pull del directorio + ABM del
+      directorio + histórico + búsqueda difusa en el PWA (`web`, 21).
 
 ---
 

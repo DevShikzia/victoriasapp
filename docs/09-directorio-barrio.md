@@ -33,7 +33,9 @@ propietario puede tener **vehículos** y **familiares**, y cada familiar puede t
 | **Lote** | Titulares + familia + vehículos |
 | **Patente** | De quién es, lote, descripción |
 
-La búsqueda es **insensible a acentos y mayúsculas** y tolera errores de tipeo (búsqueda difusa).
+La búsqueda **offline** en el PWA (sobre el directorio cacheado) es **difusa**: insensible a acentos
+y mayúsculas, por prefijo de palabra y tolerante a errores de tipeo. La búsqueda de la **API**
+(`?q=`) es texto libre insensible a mayúsculas con coincidencia directa.
 
 ## Uso durante un ingreso
 

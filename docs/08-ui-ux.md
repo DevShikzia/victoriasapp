@@ -36,9 +36,10 @@ y **computadora de monitoreo** (vista de panel). El diseño prioriza velocidad y
 ### 4. Formulario de visita
 
 - **Autocompletado:** apellido, nombre, DNI, fecha de nacimiento, sexo (editables).
-- **Patente:** campo de texto (mayúsculas). Si coincide con un vehículo del barrio, muestra de quién es.
-- **Lote / destino:** campo con autocompletado por número.
-- **Propietario:** buscador por nombre; al elegir, trae el lote.
+- **Patente:** campo de texto (mayúsculas) con autocompletado sobre los vehículos del barrio. Si
+  coincide con uno, muestra de quién es.
+- **Lote / destino:** campo con autocompletado por número (búsqueda difusa).
+- **Propietario:** buscador por nombre, en cualquier orden; al elegir, trae el lote.
 - **Motivo** y **Acompañantes**.
 - Botón **Guardar** (grande).
 - Resultado: ingreso guardado local + estado de sincronización.
@@ -52,6 +53,8 @@ y **computadora de monitoreo** (vista de panel). El diseño prioriza velocidad y
 
 - Pestañas: **Propietario**, **Lote**, **Patente**.
 - Resultados con datos y vehículos asociados.
+- Búsqueda **difusa** sobre la caché local: insensible a acentos y mayúsculas, por prefijo de palabra
+  y tolerante a errores de tipeo.
 
 ## Pantallas — Computadora de monitoreo
 

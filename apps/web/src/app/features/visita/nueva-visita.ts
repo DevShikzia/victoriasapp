@@ -8,6 +8,7 @@ import type {
   PropietarioLocal,
   Sexo,
   TipoVisita,
+  VehiculoLocal,
 } from '@victoriasapp/shared';
 import { esquemaNuevaVisita, normalizarPatente } from '@victoriasapp/shared';
 
@@ -70,6 +71,7 @@ export class NuevaVisita {
 
   protected readonly sugerenciasLotes = signal<readonly LoteLocal[]>([]);
   protected readonly sugerenciasPropietarios = signal<readonly PropietarioLocal[]>([]);
+  protected readonly sugerenciasVehiculos = signal<readonly VehiculoLocal[]>([]);
 
   protected readonly acompanantesValidos = computed(() => {
     const n = this.modelo().acompanantes;
@@ -93,12 +95,21 @@ export class NuevaVisita {
     void this.buscarPropietarios(valor);
   }
 
+  protected alCambiarPatente(valor: string): void {
+    this.actualizar('patente', valor);
+    void this.buscarVehiculos(valor);
+  }
+
   private async buscarLotes(consulta: string): Promise<void> {
     this.sugerenciasLotes.set(await this.datos.buscarLotes(consulta));
   }
 
   private async buscarPropietarios(consulta: string): Promise<void> {
     this.sugerenciasPropietarios.set(await this.datos.buscarPropietarios(consulta));
+  }
+
+  private async buscarVehiculos(consulta: string): Promise<void> {
+    this.sugerenciasVehiculos.set(await this.datos.buscarVehiculos(consulta));
   }
 
   /** Al elegir un propietario del listado, completa el lote. */
@@ -199,6 +210,7 @@ export class NuevaVisita {
       this.documentoRaw.set(null);
       this.sugerenciasLotes.set([]);
       this.sugerenciasPropietarios.set([]);
+      this.sugerenciasVehiculos.set([]);
     } finally {
       this.guardando.set(false);
     }

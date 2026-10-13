@@ -79,6 +79,16 @@ describe('parseDni', () => {
   borrado (`DELETE`) e **importación CSV**.
 - Pantalla de directorio (`/directorio`): renderiza el encabezado, las pestañas y las listas.
 - Guard de rutas por rol.
+- Búsqueda difusa (`DatosService`): lotes, propietarios y vehículos en la caché local (sin tildes,
+  en cualquier orden, con typos y por prefijo).
+
+## Tests de búsqueda difusa
+
+- `normalizarParaBusqueda`: quita tildes y `ñ`, pasa a minúsculas y colapsa espacios/signos.
+- `puntuarCoincidencia`: ordena exacto > palabra > prefijo > contiene > subsecuencia > difuso;
+  acepta los términos en cualquier orden y devuelve `0` sin coincidencia.
+- `ordenarPorCoincidencia`: descarta los que no coinciden, ordena por relevancia, respeta el límite
+  y mantiene el orden original en los empates.
 
 ## Tests de sincronización (integración)
 
