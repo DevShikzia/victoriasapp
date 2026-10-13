@@ -1,7 +1,21 @@
 <header class="barra">
   <span class="marca">Victorias · El Pare</span>
+
+  <span class="estado" [class.estado--offline]="!enLinea()">
+    @if (enLinea()) {
+      <span class="punto punto--on"></span> En línea
+    } @else {
+      <span class="punto punto--off"></span> Sin conexión
+    }
+    @if (pendientes() > 0) {
+      <span class="pendientes">{{ pendientes() }} pend.</span>
+    }
+  </span>
+
   <nav class="nav">
-    <a routerLink="/captura" routerLinkActive="activo">Modo captura</a>
+    <a routerLink="/visitas" routerLinkActive="activo">Visitas</a>
+    <a routerLink="/visita/nueva" routerLinkActive="activo">Nueva</a>
+    <a routerLink="/captura" routerLinkActive="activo">Captura</a>
   </nav>
 </header>
 

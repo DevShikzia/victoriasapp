@@ -1,0 +1,18 @@
+<div class="escaner">
+  @if (!activo()) {
+    <button type="button" class="boton" (click)="iniciar()">📷 Escanear DNI</button>
+  } @else {
+    <button type="button" class="boton boton--suave" (click)="detener()">Detener</button>
+  }
+  <span class="estado">{{ estado() }}</span>
+</div>
+
+@if (activo()) {
+  <div class="video">
+    <video #video playsinline muted autoplay></video>
+  </div>
+}
+
+@if (error(); as mensaje) {
+  <p class="error" role="alert">{{ mensaje }}</p>
+}

@@ -1,0 +1,97 @@
+<section class="pantalla">
+  <header class="encabezado">
+    <h1>Visitas</h1>
+    <a routerLink="/visita/nueva" class="boton boton--acento">+ Nueva visita</a>
+  </header>
+
+  <div class="resumen">
+    <div class="metrica">
+      <span class="numero">{{ datos.abiertas() }}</span>
+      <span class="etiqueta">abiertas</span>
+    </div>
+    <div class="metrica" [class.metrica--alerta]="datos.pendientes() > 0">
+      <span class="numero">{{ datos.pendientes() }}</span>
+      <span class="etiqueta">por sincronizar</span>
+    </div>
+    <div class="metrica">
+      <span class="numero">{{ datos.visitas().length }}</span>
+      <span class="etiqueta">en este celular</span>
+    </div>
+  </div>
+
+  @if (mensaje(); as texto) {
+    <p class="aviso" role="status">{{ texto }}</p>
+  }
+
+  <div class="herramientas">
+    <button
+      type="button"
+      class="boton boton--suave"
+      [disabled]="ocupado()"
+      (click)="cargarEjemplo()"
+    >
+      Cargar datos de ejemplo
+    </button>
+    <button type="button" class="boton boton--peligro" [disabled]="ocupado()" (click)="limpiar()">
+      Limpiar datos
+    </button>
+  </div>
+
+  @if (!datos.listo()) {
+    <p class="vacio">Cargando…</p>
+  } @else if (datos.visitas().length === 0) {
+    <p class="vacio">
+      Todavía no hay visitas registradas.
+      <a routerLink="/visita/nueva">Registrar la primera</a>.
+    </p>
+  } @else {
+    <ul class="lista">
+      @for (visita of ordenadas(); track visita.uuid) {
+        <li class="tarjeta" [class.tarjeta--abierta]="visita.salidaEn === null">
+          <div class="principal">
+            <span class="nombre">{{ visita.apellido }}, {{ visita.nombre }}</span>
+            <span class="doc">DNI {{ visita.dni }}</span>
+          </div>
+
+          <div class="detalle">
+            @if (visita.patente !== null) {
+              <span class="chip">{{ visita.patente }}</span>
+            }
+            @if (visita.loteNumero !== null) {
+              <span class="chip">Lote {{ visita.loteNumero }}</span>
+            }
+            @if (visita.propietarioNombre !== null) {
+              <span class="chip chip--suave">{{ visita.propietarioNombre }}</span>
+            }
+            @if (visita.motivo !== null) {
+              <span class="chip chip--suave">{{ visita.motivo }}</span>
+            }
+          </div>
+
+          <div class="horarios">
+            <span>Entrada: {{ visita.entradaEn | date: 'dd/MM HH:mm' }}</span>
+            @if (visita.salidaEn !== null) {
+              <span>Salida: {{ visita.salidaEn | date: 'dd/MM HH:mm' }}</span>
+            } @else {
+              <span class="abierta">Sin salida</span>
+            }
+          </div>
+
+          <div class="pie">
+            <span class="sync sync--{{ visita.estadoSync }}">{{ visita.estadoSync }}</span>
+            @if (visita.salidaEn === null) {
+              <button
+                type="button"
+                class="boton boton--suave"
+                [disabled]="ocupado()"
+                (click)="marcarSalida(visita.uuid)"
+              >
+                Marcar salida
+              </button>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</section>

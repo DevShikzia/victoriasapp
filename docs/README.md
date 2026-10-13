@@ -31,6 +31,7 @@ de lectura.
 | 11 | [Convenciones de código](./11-convenciones-de-codigo.md) | Reglas TypeScript, lint y estilo. |
 | 12 | [Git y deploy](./12-git-y-deploy.md) | Ramas, commits, entornos y despliegue. |
 | 13 | [Testing](./13-testing.md) | Estrategia de pruebas. |
+| 14 | [Pendientes](./14-pendientes.md) | TODO vivo: qué falta y qué está bloqueado. |
 
 ## Glosario
 

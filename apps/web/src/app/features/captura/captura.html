@@ -2,9 +2,8 @@
   <header class="encabezado">
     <h1>Modo captura</h1>
     <p class="ayuda">
-      Leé un DNI para ver el <strong>payload crudo</strong> y cómo lo interpreta el parser.
-      Sirve para validar los formatos: PDF417 viejo (reverso), PDF417 intermedio (frente),
-      QR nuevo y MRZ.
+      Leé un DNI para ver el <strong>payload crudo</strong> y cómo lo interpreta el parser. Sirve
+      para validar los formatos: PDF417 viejo (reverso), PDF417 intermedio (frente), QR nuevo y MRZ.
     </p>
   </header>
 
@@ -12,7 +11,9 @@
     @if (!camaraActiva()) {
       <button type="button" class="boton" (click)="iniciarCamara()">Encender cámara</button>
     } @else {
-      <button type="button" class="boton boton--peligro" (click)="detenerCamara()">Apagar cámara</button>
+      <button type="button" class="boton boton--peligro" (click)="detenerCamara()">
+        Apagar cámara
+      </button>
     }
 
     <label class="boton boton--suave">
@@ -49,7 +50,9 @@
 
   <p class="estado">
     Formatos soportados:
-    <span class="mono">{{ soportados().length > 0 ? soportados().join(', ') : 'consultando…' }}</span>
+    <span class="mono">{{
+      soportados().length > 0 ? soportados().join(', ') : 'consultando…'
+    }}</span>
   </p>
 
   <form class="manual" (ngSubmit)="parsearManual()">

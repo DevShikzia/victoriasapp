@@ -1,14 +1,14 @@
 .barra {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
   background: #14532d;
   color: #fff;
   position: sticky;
   top: 0;
   z-index: 10;
+  flex-wrap: wrap;
 }
 
 .marca {
@@ -16,7 +16,43 @@
   letter-spacing: 0.01em;
 }
 
+.estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.9;
+
+  .punto {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    display: inline-block;
+
+    &--on {
+      background: #5ee08a;
+    }
+
+    &--off {
+      background: #f0b429;
+    }
+  }
+
+  &--offline {
+    color: #ffe1a8;
+  }
+}
+
+.pendientes {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+}
+
 .nav {
+  margin-left: auto;
+
   a {
     color: #fff;
     text-decoration: none;

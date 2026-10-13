@@ -12,7 +12,11 @@ import {
  *  - `qr_code`: DNI electrónico nuevo.
  *  - `data_matrix`: por si apareciera en alguna variante.
  */
-export const FORMATOS_DNI = ['pdf417', 'qr_code', 'data_matrix'] as const satisfies readonly BarcodeFormat[];
+export const FORMATOS_DNI = [
+  'pdf417',
+  'qr_code',
+  'data_matrix',
+] as const satisfies readonly BarcodeFormat[];
 
 /** Fuentes de imagen que acepta el detector. */
 export type FuenteImagen = HTMLVideoElement | HTMLCanvasElement | ImageBitmap | Blob | ImageData;

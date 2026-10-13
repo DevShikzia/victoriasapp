@@ -157,6 +157,10 @@ function texto(valor: string | undefined): string {
   return valor ?? '';
 }
 
-function fallo(formato: DniFormato | 'desconocido', raw: string, errores: readonly string[]): ParseResult {
+function fallo(
+  formato: DniFormato | 'desconocido',
+  raw: string,
+  errores: readonly string[],
+): ParseResult {
   return { ok: false, formato, data: null, raw, errores };
 }

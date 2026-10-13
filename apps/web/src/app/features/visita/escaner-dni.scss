@@ -1,0 +1,57 @@
+:host {
+  display: block;
+}
+
+.escaner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.boton {
+  padding: 0.6rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  background: var(--acento, #14532d);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &--suave {
+    background: #e8ecef;
+    color: #1a1a1a;
+    border-color: #cdd4d9;
+  }
+}
+
+.estado {
+  font-size: 0.85rem;
+  color: var(--texto-suave, #555);
+}
+
+.video {
+  margin-top: 0.6rem;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  border-radius: 0.6rem;
+  overflow: hidden;
+
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.error {
+  margin: 0.6rem 0 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.5rem;
+  background: #fdecea;
+  color: #b3261e;
+  border: 1px solid #f5c6c2;
+}

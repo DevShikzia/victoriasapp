@@ -6,13 +6,7 @@
 export const SEXOS = ['M', 'F', 'X'] as const;
 export type Sexo = (typeof SEXOS)[number];
 
-export const FORMATOS_DNI = [
-  'pdf417-viejo',
-  'pdf417-intermedio',
-  'qr',
-  'mrz',
-  'manual',
-] as const;
+export const FORMATOS_DNI = ['pdf417-viejo', 'pdf417-intermedio', 'qr', 'mrz', 'manual'] as const;
 export type DniFormato = (typeof FORMATOS_DNI)[number];
 
 export const ROLES_USUARIO = ['admin', 'supervisor', 'guardia'] as const;

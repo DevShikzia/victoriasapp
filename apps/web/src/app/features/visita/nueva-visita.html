@@ -1,0 +1,208 @@
+<section class="pantalla">
+  <header class="encabezado">
+    <h1>Nueva visita</h1>
+    <a routerLink="/visitas" class="enlace">Ver visitas</a>
+  </header>
+
+  @if (guardada(); as mensaje) {
+    <p class="aviso aviso--ok" role="status">{{ mensaje }}</p>
+  }
+
+  @if (errores().length > 0) {
+    <ul class="aviso aviso--error" role="alert">
+      @for (error of errores(); track error) {
+        <li>{{ error }}</li>
+      }
+    </ul>
+  }
+
+  <div class="tipo">
+    <label [class.activo]="modelo().tipo === 'ingreso'">
+      <input
+        type="radio"
+        name="tipo"
+        value="ingreso"
+        [ngModel]="modelo().tipo"
+        (ngModelChange)="actualizar('tipo', $event)"
+      />
+      Ingreso
+    </label>
+    <label [class.activo]="modelo().tipo === 'egreso'">
+      <input
+        type="radio"
+        name="tipo"
+        value="egreso"
+        [ngModel]="modelo().tipo"
+        (ngModelChange)="actualizar('tipo', $event)"
+      />
+      Egreso
+    </label>
+  </div>
+
+  <div class="escaner-bloque">
+    <button type="button" class="boton boton--suave" (click)="alternarEscaner()">
+      {{ mostrarEscaner() ? 'Cerrar escáner' : '📷 Escanear DNI' }}
+    </button>
+    @if (origenDocumento() !== 'manual') {
+      <span class="chip">Leído: {{ origenDocumento() }}</span>
+    }
+  </div>
+
+  @if (mostrarEscaner()) {
+    <app-escaner-dni (detectado)="alEscanear($event)" />
+  }
+
+  <form (ngSubmit)="guardar()" class="formulario">
+    <fieldset>
+      <legend>Persona</legend>
+
+      <label>
+        Apellido *
+        <input
+          type="text"
+          name="apellido"
+          autocomplete="off"
+          [ngModel]="modelo().apellido"
+          (ngModelChange)="actualizar('apellido', $event)"
+        />
+      </label>
+
+      <label>
+        Nombre *
+        <input
+          type="text"
+          name="nombre"
+          autocomplete="off"
+          [ngModel]="modelo().nombre"
+          (ngModelChange)="actualizar('nombre', $event)"
+        />
+      </label>
+
+      <div class="fila">
+        <label>
+          DNI *
+          <input
+            type="text"
+            name="dni"
+            inputmode="numeric"
+            autocomplete="off"
+            [ngModel]="modelo().dni"
+            (ngModelChange)="actualizar('dni', $event)"
+          />
+        </label>
+
+        <label>
+          Nacimiento
+          <input
+            type="date"
+            name="fechaNacimiento"
+            [ngModel]="modelo().fechaNacimiento"
+            (ngModelChange)="actualizar('fechaNacimiento', $event)"
+          />
+        </label>
+
+        <label>
+          Sexo
+          <select
+            name="sexo"
+            [ngModel]="modelo().sexo"
+            (ngModelChange)="actualizar('sexo', $event)"
+          >
+            <option value="">—</option>
+            <option value="M">Masculino</option>
+            <option value="F">Femenino</option>
+            <option value="X">X</option>
+          </select>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Destino</legend>
+
+      <div class="fila">
+        <label>
+          Patente
+          <input
+            type="text"
+            name="patente"
+            autocomplete="off"
+            placeholder="AB123CD"
+            [ngModel]="modelo().patente"
+            (ngModelChange)="actualizar('patente', $event)"
+            (blur)="alSalirDePatente()"
+          />
+        </label>
+
+        <label>
+          Lote
+          <input
+            type="text"
+            name="loteNumero"
+            list="lista-lotes"
+            autocomplete="off"
+            [ngModel]="modelo().loteNumero"
+            (ngModelChange)="alCambiarLote($event)"
+            (blur)="alSalirDelLote()"
+          />
+          <datalist id="lista-lotes">
+            @for (lote of sugerenciasLotes(); track lote.uuid) {
+              <option [value]="lote.numero">{{ lote.calle }}</option>
+            }
+          </datalist>
+        </label>
+      </div>
+
+      <label>
+        Propietario (si no sabés el lote)
+        <input
+          type="text"
+          name="propietarioNombre"
+          list="lista-propietarios"
+          autocomplete="off"
+          placeholder="Apellido o apellido, nombre"
+          [ngModel]="modelo().propietarioNombre"
+          (ngModelChange)="alCambiarPropietario($event)"
+          (blur)="alElegirPropietario()"
+        />
+        <datalist id="lista-propietarios">
+          @for (p of sugerenciasPropietarios(); track p.uuid) {
+            <option [value]="p.apellido + ', ' + p.nombre">Lote {{ p.loteNumero }}</option>
+          }
+        </datalist>
+      </label>
+
+      <label>
+        Motivo
+        <input
+          type="text"
+          name="motivo"
+          autocomplete="off"
+          placeholder="Visita, delivery, service…"
+          [ngModel]="modelo().motivo"
+          (ngModelChange)="actualizar('motivo', $event)"
+        />
+      </label>
+
+      <label>
+        Acompañantes
+        <input
+          type="number"
+          name="acompanantes"
+          min="0"
+          max="50"
+          [ngModel]="modelo().acompanantes"
+          (ngModelChange)="actualizar('acompanantes', +$event)"
+        />
+      </label>
+    </fieldset>
+
+    <button
+      type="submit"
+      class="boton boton--grande"
+      [disabled]="guardando() || !acompanantesValidos()"
+    >
+      {{ guardando() ? 'Guardando…' : 'Guardar visita' }}
+    </button>
+  </form>
+</section>

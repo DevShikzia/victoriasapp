@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  signal,
-  viewChild,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, viewChild } from '@angular/core';
 import type { ElementRef, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import type { DetectedBarcode } from 'barcode-detector/ponyfill';

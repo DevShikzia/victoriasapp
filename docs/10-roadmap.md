@@ -22,22 +22,31 @@ el problema real (el escaneo) cuanto antes.
 
 ## Fase 1 — Escáner + parser
 
-- [ ] Escaneo con `BarcodeDetector` + polyfill zxing-wasm.
-- [ ] Modo foto para PDF417.
-- [ ] `parseDni` completo (PDF417 viejo/intermedio, QR, MRZ).
-- [ ] Normalización (`NXX→Ñ`, fechas, sexo).
-- [ ] Tests del parser con casos reales.
+- [x] Escaneo con `BarcodeDetector` + polyfill zxing-wasm.
+- [x] Modo foto para PDF417.
+- [x] `parseDni` completo (PDF417 viejo/intermedio, QR, MRZ).
+- [x] Normalización (`NXX→Ñ`, fechas, sexo).
+- [ ] Tests del parser con casos reales. ← **pendiente de muestras reales** (hoy hay tests con casos sintéticos)
 
 **Entregable:** escaneamos un DNI y vemos los datos extraídos en pantalla.
 
+> Estado: implementado en `apps/web` (pantalla **Modo captura** + escáner incrustado en el formulario) y
+> `packages/shared/src/dni/`. Falta sólo el caso real del QR del DNI electrónico.
+
 ## Fase 2 — Registro de visita (offline)
 
-- [ ] Formulario de visita (autocompletado + patente + lote + motivo).
-- [ ] Persistencia en IndexedDB.
-- [ ] Cola `outbox`.
+- [x] Formulario de visita (autocompletado + patente + lote + motivo).
+- [x] Persistencia en IndexedDB.
+- [x] Cola `outbox`.
 - [ ] Export a CSV local.
 
 **Entregable:** el guardia registra ingresos sin internet.
+
+> Estado: funcionando. `DatosService` (Dexie) guarda la visita y encola la operación en `outbox` en una
+> sola transacción. La pantalla **Nueva visita** permite escanear el DNI o cargar a mano, autocompleta
+> dueño/lote desde la patente o el lote, y la pantalla **Visitas** lista todo con su estado de sync y
+> permite marcar la salida. El directorio cacheado se puede poblar con "Cargar datos de ejemplo" para
+> probar sin API. Falta el export a CSV.
 
 ## Fase 3 — API + Mongo + sync + login
 

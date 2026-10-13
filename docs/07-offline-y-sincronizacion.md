@@ -95,3 +95,17 @@ POST /api/sync ──► Mongo (upsert por uuid)
 - Crear registros offline y verificar que llegan al reconectar.
 - Simular corte de red en medio del envío y comprobar que no se duplica.
 - Sincronizar desde dos dispositivos a la vez con el mismo `uuid`.
+
+## Implementado (Fase 2)
+
+La parte local ya está en el PWA:
+
+- `apps/web/src/app/core/db/base-local.ts` — la base Dexie con todas las tablas.
+- `apps/web/src/app/core/db/datos.service.ts` — guardar visita / marcar salida / buscar en el
+  directorio. Cada cambio escribe en la entidad **y** en `outbox` dentro de una transacción.
+- `apps/web/src/app/features/visita/` — formulario de nueva visita + escáner de DNI incrustado.
+- `apps/web/src/app/features/visitas/` — listado con estado de sync y marcado de salida.
+- Tests: `datos.service.spec.ts` (guardar, salir, buscar en el directorio de ejemplo).
+
+La **subida** (`POST /api/sync`, `pull` del directorio, refresh de tokens) es la Fase 3 y todavía no
+está: hoy el `outbox` acumula operaciones y el indicador de la barra muestra cuántas hay pendientes.
