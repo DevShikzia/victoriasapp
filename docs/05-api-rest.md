@@ -52,8 +52,10 @@ Devuelve el usuario autenticado.
 
 ### `GET /api/visits`
 
-Parámetros: `desde`, `hasta`, `tipo`, `lote`, `dni`, `patente`, `abiertas` (boolean),
-`q` (texto libre), `page`, `limit`.
+Parámetros: `desde`, `hasta`, `lote`, `dni`, `patente`, `abiertas` (boolean),
+`estado` (`dentro` | `fuera`), `q` (texto libre sobre apellido, nombre, DNI, patente, lote y
+propietario; se trata como literal, no como regex) y `limit` (por defecto 200, máximo 500).
+Los resultados se ordenan por `entradaEn` descendente.
 
 ### `GET /api/visits/:id`
 

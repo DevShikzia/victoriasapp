@@ -63,7 +63,8 @@ describe('parseDni', () => {
 - Auth: login correcto/incorrecto, refresh, logout, token vencido, permisos por rol.
 - `/sync`: idempotencia (mismo `uuid` dos veces → no duplica), lotes mixtos con errores.
 - Validación: body inválido → 400 con `VALIDATION_ERROR`.
-- Visitas: crear, listar con filtros, marcar salida.
+- Visitas: crear, listar con filtros (texto libre `q`, `estado` dentro/fuera, `desde`/`hasta`,
+  `lote`, `dni`, `patente`) y marcar salida.
 - Directorio: búsquedas por nombre/lote/patente, **importación CSV** (idempotente), **pull
   incremental** (proyecciones locales), bajas (tombstone) y RBAC (403 para `guardia` al escribir).
 
@@ -72,6 +73,8 @@ describe('parseDni', () => {
 - Componente de formulario: autocompleta al recibir `DniData`.
 - Servicio de escaneo: dado un payload, devuelve el `ParseResult` esperado.
 - Servicio de sync: encola offline, vacía el outbox y **aplica el pull del directorio** en Dexie.
+- Servicio de histórico (`VisitasApiService`): arma los query params de `GET /api/visits` recortando
+  los valores vacíos y omitiendo los filtros ausentes.
 - ABM del directorio (`DirectorioAdminService`): listado con filtros, alta (`POST`), edición (`PATCH`),
   borrado (`DELETE`) e **importación CSV**.
 - Pantalla de directorio (`/directorio`): renderiza el encabezado, las pestañas y las listas.

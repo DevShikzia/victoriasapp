@@ -16,6 +16,31 @@
   }
 }
 
+.tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid #d7dbdf;
+  border-radius: 999px;
+  background: #f1f3f5;
+}
+
+.tab {
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #495057;
+  cursor: pointer;
+
+  &--activo {
+    background: #14532d;
+    color: #fff;
+  }
+}
+
 .enlace {
   display: inline-flex;
   align-items: center;
@@ -143,5 +168,71 @@ table {
   &--red {
     background: #d3f9d8;
     color: #14532d;
+  }
+
+  &--dentro {
+    background: #d3f9d8;
+    color: #14532d;
+  }
+}
+
+.filtros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.6rem 0.9rem;
+  align-items: end;
+  margin: 1rem 0;
+  padding: 0.9rem;
+  border: 1px solid #d7dbdf;
+  border-radius: 0.5rem;
+  background: #fafbfc;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  span {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+  }
+
+  input,
+  select {
+    padding: 0.4rem 0.5rem;
+    border: 1px solid #c9ced4;
+    border-radius: 0.4rem;
+    font: inherit;
+    min-width: 0;
+  }
+
+  &--ancho {
+    grid-column: span 2;
+  }
+}
+
+.filtros-acciones {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.aviso--error {
+  background: #fdecea;
+  color: #8a1c1c;
+}
+
+.resultado {
+  font-size: 0.82rem;
+  opacity: 0.75;
+}
+
+.boton {
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
 }

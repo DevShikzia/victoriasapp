@@ -73,7 +73,9 @@ el problema real (el escaneo) cuanto antes.
 - [x] Búsquedas (nombre / lote / patente) — API online; en el PWA la caché local ya guarda el
       directorio por pull incremental (la búsqueda offline usa los datos cacheados de Fase 2).
 - [x] Panel en la computadora con Socket.IO (tiempo real) — `/panel` en el PWA.
-- [x] Reportes y export desde el panel (export CSV de visitas abiertas).
+- [x] Reportes y export desde el panel: CSV de las visitas abiertas y del histórico.
+- [x] Panel con **filtros e histórico**: búsqueda por texto libre, rango de fechas de entrada,
+      estado (dentro/fuera) y lote, con export CSV del resultado.
 - [x] Importador CSV del directorio (`POST /api/directorio/importar`).
 - [x] ABM del directorio **desde el PWA**: pantalla `/directorio` (sólo `admin`/`supervisor`) con
       pestañas por entidad, buscador, alta/edición/borrado online, desplegables de referencias e
@@ -87,6 +89,7 @@ el problema real (el escaneo) cuanto antes.
 > está implementada, y el canal Socket.IO expone `directorio:actualizado`. En el PWA existe el **panel
 > en vivo** (`/panel`) y la pantalla de **administración del directorio** (`/directorio`, sólo
 > admin/supervisor) con ABM online e importación CSV; el sincronizador baja el directorio a IndexedDB.
+> El **panel** (`/panel`) ya tiene pestañas **En vivo / Histórico**, con filtros y export CSV.
 > Falta la **edición offline** del directorio (outbox) y el ABM de usuarios en el PWA.
 
 ## Fase 5 — Pulido

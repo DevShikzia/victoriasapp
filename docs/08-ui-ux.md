@@ -62,10 +62,13 @@ y **computadora de monitoreo** (vista de panel). El diseño prioriza velocidad y
 - Búsqueda por DNI, nombre o patente.
 - Resaltado de nuevos ingresos.
 
-> **Estado (Fase 4):** implementado en el PWA como ruta **`/panel`** (`features/panel/`). Muestra las
-> visitas abiertas de todos los puestos (fusiona lo local del dispositivo con lo que llega por
-> `visita:creada`/`visita:actualizada`), indica el estado de la conexión y exporta **CSV** de las
-> visitas abiertas. Faltan los filtros y el histórico con rango de fechas.
+> **Estado (Fase 4):** implementado en el PWA como ruta **`/panel`** (`features/panel/`) con dos
+> vistas. **En vivo:** visitas abiertas de todos los puestos (fusiona lo local del dispositivo con lo
+> que llega por `visita:creada`/`visita:actualizada`), indica el estado de la conexión y exporta
+> **CSV** de las abiertas. **Histórico:** consulta a `GET /api/visits` con filtros por texto libre
+> (apellido, nombre, DNI, patente, lote o propietario), rango de fechas de entrada, estado
+> (dentro/fuera) y lote, con export **CSV** del resultado. Queda pendiente el filtro por **garita**
+> (el modelo guarda `garitaId`, pero todavía no hay ABM de garitas).
 
 ### Reportes (supervisor/admin)
 

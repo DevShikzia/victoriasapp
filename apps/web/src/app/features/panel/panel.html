@@ -1,73 +1,196 @@
 <section class="panel">
   <header class="encabezado">
-    <h2>Panel en vivo</h2>
+    <h2>{{ modo() === 'vivo' ? 'Panel en vivo' : 'Histórico de visitas' }}</h2>
+
+    <nav class="tabs">
+      <button
+        type="button"
+        class="tab"
+        [class.tab--activo]="modo() === 'vivo'"
+        (click)="cambiarModo('vivo')"
+      >
+        En vivo
+      </button>
+      <button
+        type="button"
+        class="tab"
+        [class.tab--activo]="modo() === 'historico'"
+        (click)="cambiarModo('historico')"
+      >
+        Histórico
+      </button>
+    </nav>
+
     <span class="enlace" [class.enlace--on]="tiempoReal.conectado()">
       <span class="punto" [class.punto--on]="tiempoReal.conectado()"></span>
       {{ tiempoReal.conectado() ? 'Tiempo real activo' : 'Sin tiempo real' }}
     </span>
   </header>
 
-  <div class="resumen">
-    <div class="metrica">
-      <span class="numero">{{ abiertas().length }}</span>
-      <span class="etiqueta">abiertas ahora</span>
-    </div>
-    <div class="metrica">
-      <span class="numero">{{ datos.visitas().length }}</span>
-      <span class="etiqueta">en este celular</span>
-    </div>
-    <div class="metrica" [class.metrica--alerta]="datos.pendientes() > 0">
-      <span class="numero">{{ datos.pendientes() }}</span>
-      <span class="etiqueta">por sincronizar</span>
-    </div>
-  </div>
-
-  @if (tiempoReal.ultimoEvento(); as evento) {
-    <p class="aviso" role="status">Último evento: {{ evento }}</p>
+  @if (mensaje(); as aviso) {
+    <p class="aviso" role="status">{{ aviso }}</p>
   }
 
-  @if (mensaje(); as texto) {
-    <p class="aviso" role="status">{{ texto }}</p>
-  }
+  @if (modo() === 'vivo') {
+    <div class="resumen">
+      <div class="metrica">
+        <span class="numero">{{ abiertas().length }}</span>
+        <span class="etiqueta">abiertas ahora</span>
+      </div>
+      <div class="metrica">
+        <span class="numero">{{ datos.visitas().length }}</span>
+        <span class="etiqueta">en este celular</span>
+      </div>
+      <div class="metrica" [class.metrica--alerta]="datos.pendientes() > 0">
+        <span class="numero">{{ datos.pendientes() }}</span>
+        <span class="etiqueta">por sincronizar</span>
+      </div>
+    </div>
 
-  <div class="herramientas">
-    <button type="button" class="boton" (click)="exportarCsv()">Exportar CSV</button>
-  </div>
+    @if (tiempoReal.ultimoEvento(); as evento) {
+      <p class="aviso" role="status">Último evento: {{ evento }}</p>
+    }
 
-  @if (abiertas().length === 0) {
-    <p class="vacio">No hay visitas abiertas en este momento.</p>
-  } @else {
-    <div class="tabla">
-      <table>
-        <thead>
-          <tr>
-            <th>Visitante</th>
-            <th>DNI</th>
-            <th>Patente</th>
-            <th>Lote</th>
-            <th>Motivo</th>
-            <th>Entrada</th>
-            <th>Origen</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (fila of abiertas(); track fila.uuid) {
+    <div class="herramientas">
+      <button type="button" class="boton" (click)="exportarCsv()">Exportar abiertas</button>
+    </div>
+
+    @if (abiertas().length === 0) {
+      <p class="vacio">No hay visitas abiertas en este momento.</p>
+    } @else {
+      <div class="tabla">
+        <table>
+          <thead>
             <tr>
-              <td class="nombre">{{ fila.apellido }}, {{ fila.nombre }}</td>
-              <td>{{ fila.dni }}</td>
-              <td>{{ fila.patente ?? '—' }}</td>
-              <td>{{ fila.loteNumero ?? '—' }}</td>
-              <td>{{ fila.motivo ?? '—' }}</td>
-              <td>{{ fila.entradaEn | date: 'HH:mm' }}</td>
-              <td>
-                <span class="chip" [class.chip--red]="fila.origen === 'red'">{{
-                  fila.origen
-                }}</span>
-              </td>
+              <th>Visitante</th>
+              <th>DNI</th>
+              <th>Patente</th>
+              <th>Lote</th>
+              <th>Motivo</th>
+              <th>Entrada</th>
+              <th>Origen</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (fila of abiertas(); track fila.uuid) {
+              <tr>
+                <td class="nombre">{{ fila.apellido }}, {{ fila.nombre }}</td>
+                <td>{{ fila.dni }}</td>
+                <td>{{ fila.patente ?? '—' }}</td>
+                <td>{{ fila.loteNumero ?? '—' }}</td>
+                <td>{{ fila.motivo ?? '—' }}</td>
+                <td>{{ fila.entradaEn | date: 'HH:mm' }}</td>
+                <td>
+                  <span class="chip" [class.chip--red]="fila.origen === 'red'">{{
+                    fila.origen
+                  }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  } @else {
+    <div class="filtros">
+      <label class="campo campo--ancho">
+        <span>Buscar</span>
+        <input
+          type="search"
+          placeholder="Nombre, DNI, patente, lote o propietario…"
+          [ngModel]="filtroQ()"
+          (ngModelChange)="filtroQ.set($event)"
+          (keyup.enter)="buscarHistorial()"
+        />
+      </label>
+      <label class="campo">
+        <span>Desde</span>
+        <input type="date" [ngModel]="filtroDesde()" (ngModelChange)="filtroDesde.set($event)" />
+      </label>
+      <label class="campo">
+        <span>Hasta</span>
+        <input type="date" [ngModel]="filtroHasta()" (ngModelChange)="filtroHasta.set($event)" />
+      </label>
+      <label class="campo">
+        <span>Estado</span>
+        <select [ngModel]="filtroEstado()" (ngModelChange)="filtroEstado.set($event)">
+          <option value="">Todas</option>
+          <option value="dentro">Dentro</option>
+          <option value="fuera">Fuera</option>
+        </select>
+      </label>
+      <label class="campo">
+        <span>Lote</span>
+        <input
+          type="text"
+          [ngModel]="filtroLote()"
+          (ngModelChange)="filtroLote.set($event)"
+          (keyup.enter)="buscarHistorial()"
+        />
+      </label>
+
+      <div class="filtros-acciones">
+        <button
+          type="button"
+          class="boton"
+          (click)="buscarHistorial()"
+          [disabled]="cargandoHistorial()"
+        >
+          {{ cargandoHistorial() ? 'Buscando…' : 'Buscar' }}
+        </button>
+        <button
+          type="button"
+          class="boton boton--suave"
+          (click)="exportarHistorial()"
+          [disabled]="historial().length === 0"
+        >
+          Exportar CSV
+        </button>
+      </div>
     </div>
+
+    @if (errorHistorial(); as falla) {
+      <p class="aviso aviso--error" role="alert">{{ falla }}</p>
+    }
+
+    @if (cargandoHistorial()) {
+      <p class="vacio">Buscando…</p>
+    } @else if (historial().length === 0) {
+      <p class="vacio">No hay visitas para los filtros elegidos.</p>
+    } @else {
+      <p class="resultado">{{ historial().length }} visitas.</p>
+      <div class="tabla">
+        <table>
+          <thead>
+            <tr>
+              <th>Visitante</th>
+              <th>DNI</th>
+              <th>Patente</th>
+              <th>Lote</th>
+              <th>Entrada</th>
+              <th>Salida</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (fila of historial(); track fila.uuid) {
+              <tr>
+                <td class="nombre">{{ fila.apellido }}, {{ fila.nombre }}</td>
+                <td>{{ fila.dni }}</td>
+                <td>{{ fila.patente ?? '—' }}</td>
+                <td>{{ fila.loteNumero ?? '—' }}</td>
+                <td>{{ fila.entradaEn | date: 'dd/MM HH:mm' }}</td>
+                <td>{{ fila.salidaEn === null ? '—' : (fila.salidaEn | date: 'dd/MM HH:mm') }}</td>
+                <td>
+                  <span class="chip" [class.chip--dentro]="fila.salidaEn === null">{{
+                    fila.salidaEn === null ? 'dentro' : 'fuera'
+                  }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   }
 </section>

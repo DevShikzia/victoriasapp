@@ -15,6 +15,11 @@ function textoQuery(valor: unknown): string | null {
   return typeof valor === 'string' && valor.trim() !== '' ? valor.trim() : null;
 }
 
+/** Escapa los metacaracteres para poder usar el texto del usuario como regex. */
+function escaparRegex(texto: string): string {
+  return texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function numeroQuery(valor: unknown, porDefecto: number, maximo: number): number {
   const texto = textoQuery(valor);
   if (texto === null) {
@@ -41,6 +46,12 @@ export function crearRutasVisitas(env: Env): Router {
       if (textoQuery(q.abiertas) === 'true') {
         filtro.salidaEn = null;
       }
+      const estado = textoQuery(q.estado);
+      if (estado === 'dentro') {
+        filtro.salidaEn = null;
+      } else if (estado === 'fuera') {
+        filtro.salidaEn = { $ne: null };
+      }
       const dni = textoQuery(q.dni);
       if (dni !== null) {
         filtro.dni = dni;
@@ -52,6 +63,18 @@ export function crearRutasVisitas(env: Env): Router {
       const lote = textoQuery(q.lote);
       if (lote !== null) {
         filtro.loteNumero = lote;
+      }
+      const texto = textoQuery(q.q);
+      if (texto !== null) {
+        const regex = new RegExp(escaparRegex(texto), 'i');
+        filtro.$or = [
+          { apellido: regex },
+          { nombre: regex },
+          { dni: regex },
+          { patente: regex },
+          { loteNumero: regex },
+          { propietarioNombre: regex },
+        ];
       }
 
       const rango: { $gte?: Date; $lte?: Date } = {};

@@ -22,8 +22,8 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
 
 - [ ] **Edición offline del directorio** (alta rápida desde la garita): encolar en el `outbox` y
       resolver conflictos al sincronizar. En esta fase el ABM es **online** (admin/supervisor).
-- [x] **Export a CSV local** de las visitas abiertas — hecho en el **panel en vivo** (`/panel`).
-      Falta exportar el histórico completo con filtros por fecha.
+- [x] **Export a CSV** desde el panel (`/panel`): visitas abiertas e **histórico completo** con
+      filtros de texto, rango de fechas, estado (dentro/fuera) y lote.
 - [ ] **Búsqueda difusa offline** en el directorio cacheado (hoy la búsqueda local es por
       coincidencia directa sobre los datos de Fase 2).
 - [ ] **Lista de propietarios / lotes real del barrio** (Excel o carga por la app) para poblar el
@@ -50,12 +50,13 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
       vehículos, **pull incremental** `GET /api/directorio?desde=` con bajas (tombstones),
       **importador CSV**, canal **Socket.IO** (`/realtime`) con eventos `visita:creada`,
       `visita:actualizada` y `directorio:actualizado`. En el PWA: el sincronizador baja el directorio
-      a IndexedDB, el **panel en vivo** (`/panel`) muestra las visitas abiertas de todos los puestos
-      con export CSV y la pantalla **`/directorio`** (sólo `admin`/`supervisor`) hace el ABM online
-      del directorio (pestañas por entidad, buscador, alta/edición/borrado e importación CSV).
+      a IndexedDB, el **panel** (`/panel`) muestra las visitas abiertas de todos los puestos y el
+      **histórico** filtrable (texto, fechas, estado, lote) con export CSV; la pantalla
+      **`/directorio`** (sólo `admin`/`supervisor`) hace el ABM online del directorio (pestañas por
+      entidad, buscador, alta/edición/borrado e importación CSV).
 - [x] Tests: parser + esquemas + CSV/nombre (`shared`, 34), integración de la API con Mongo en memoria
-      (`api`, 20) y flujo offline/sync + pull del directorio + ABM del directorio en el PWA
-      (`web`, 18).
+      (`api`, 25) y flujo offline/sync + pull del directorio + ABM del directorio + histórico en el
+      PWA (`web`, 20).
 
 ---
 

@@ -250,6 +250,95 @@ describe('sincronización de visitas', () => {
   });
 });
 
+describe('histórico de visitas (filtros)', () => {
+  const abierta = {
+    uuid: 'hist-abierta',
+    tipo: 'ingreso',
+    apellido: 'HISTORICA',
+    nombre: 'ABIERTA',
+    dni: '11111111',
+    patente: 'HIST001',
+    loteNumero: 'H1',
+    entradaEn: '2026-05-01T10:00:00.000Z',
+    actualizadoEn: '2026-05-01T10:00:00.000Z',
+  };
+  const cerrada = {
+    uuid: 'hist-cerrada',
+    tipo: 'ingreso',
+    apellido: 'HISTORICA',
+    nombre: 'CERRADA',
+    dni: '22222222',
+    patente: 'HIST002',
+    loteNumero: 'H2',
+    entradaEn: '2026-05-02T15:00:00.000Z',
+    actualizadoEn: '2026-05-02T15:00:00.000Z',
+  };
+
+  beforeAll(async () => {
+    const token = await tokenAdmin();
+    await request(app)
+      .post('/api/sync')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ visitas: [abierta, cerrada] })
+      .expect(200);
+
+    const listado = await request(app)
+      .get('/api/visits?q=HISTORICA')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const docs = (cuerpoJson(listado) as CuerpoData<{ id: string; uuid: string }[]>).data;
+    const doc = docs.find((v) => v.uuid === 'hist-cerrada');
+    await request(app)
+      .post(`/api/visits/${String(doc?.id)}/salida`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+  });
+
+  async function buscar(query: string): Promise<readonly string[]> {
+    const token = await tokenAdmin();
+    const respuesta = await request(app)
+      .get(`/api/visits${query}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    return (cuerpoJson(respuesta) as CuerpoData<{ uuid: string }[]>).data.map((v) => v.uuid);
+  }
+
+  it('busca por texto libre sin distinguir mayúsculas', async () => {
+    const uuids = await buscar('?q=historica');
+    expect(uuids).toContain('hist-abierta');
+    expect(uuids).toContain('hist-cerrada');
+  });
+
+  it('busca por nombre, DNI, patente y lote', async () => {
+    expect(await buscar('?q=ABIERTA')).toContain('hist-abierta');
+    expect(await buscar('?dni=22222222')).toContain('hist-cerrada');
+    expect(await buscar('?patente=hist002')).toContain('hist-cerrada');
+    expect(await buscar('?lote=H1')).toContain('hist-abierta');
+  });
+
+  it('filtra por estado dentro/fuera', async () => {
+    const dentro = await buscar('?q=historica&estado=dentro');
+    expect(dentro).toContain('hist-abierta');
+    expect(dentro).not.toContain('hist-cerrada');
+
+    const fuera = await buscar('?q=historica&estado=fuera');
+    expect(fuera).toContain('hist-cerrada');
+    expect(fuera).not.toContain('hist-abierta');
+  });
+
+  it('filtra por rango de fechas de entrada', async () => {
+    const rango = await buscar(
+      '?q=historica&desde=2026-05-02T00:00:00.000Z&hasta=2026-05-03T00:00:00.000Z',
+    );
+    expect(rango).toContain('hist-cerrada');
+    expect(rango).not.toContain('hist-abierta');
+  });
+
+  it('trata el texto de búsqueda como literal (no como regex)', async () => {
+    expect(await buscar('?q=.*')).toHaveLength(0);
+  });
+});
+
 interface CuerpoData<T> {
   readonly ok: boolean;
   readonly data: T;
