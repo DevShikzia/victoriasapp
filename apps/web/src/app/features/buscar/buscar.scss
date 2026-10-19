@@ -1,6 +1,6 @@
 .buscar {
   max-width: 44rem;
-  padding-bottom: calc(var(--esp-6) + var(--tabbar-alto));
+  padding-bottom: var(--esp-6);
 }
 
 /* --------------------------------------------------------------------------
@@ -472,10 +472,6 @@
  * ------------------------------------------------------------------------ */
 
 @media (min-width: 768px) {
-  .buscar {
-    padding-bottom: var(--esp-6);
-  }
-
   .ficha {
     top: 0;
     left: auto;
