@@ -11,6 +11,7 @@ de lectura.
 | 08 | [UI/UX](./08-ui-ux.md) | Pantallas, flujos y estados de la interfaz. |
 | 09 | [Directorio del barrio](./09-directorio-barrio.md) | Barrio, lotes, propietarios, familia y vehículos. |
 | 10 | [Roadmap](./10-roadmap.md) | Fases de construcción y checklist. |
+| 15 | [Buscador global y rediseño mobile-first](./15-buscador-global-y-rediseno-mobile.md) | Búsqueda única offline, navegación móvil y sistema de diseño. |
 
 ## Técnico
 

@@ -1,7 +1,10 @@
 <section class="pantalla">
   <header class="encabezado">
-    <h1>Nueva visita</h1>
-    <a routerLink="/visitas" class="enlace">Ver visitas</a>
+    <div>
+      <h1>Nueva visita</h1>
+      <p class="subtitulo">Registrá el ingreso o egreso en segundos.</p>
+    </div>
+    <a routerLink="/visitas" class="boton boton--suave">Volver</a>
   </header>
 
   @if (guardada(); as mensaje) {
@@ -16,7 +19,7 @@
     </ul>
   }
 
-  <div class="tipo">
+  <div class="tipo" role="radiogroup" aria-label="Tipo de visita">
     <label [class.activo]="modelo().tipo === 'ingreso'">
       <input
         type="radio"
@@ -40,7 +43,7 @@
   </div>
 
   <div class="escaner-bloque">
-    <button type="button" class="boton boton--suave" (click)="alternarEscaner()">
+    <button type="button" class="boton boton--suave boton--bloque" (click)="alternarEscaner()">
       {{ mostrarEscaner() ? 'Cerrar escáner' : '📷 Escanear DNI' }}
     </button>
     @if (origenDocumento() !== 'manual') {
@@ -210,7 +213,7 @@
 
     <button
       type="submit"
-      class="boton boton--grande"
+      class="boton boton--acento boton--grande boton--bloque"
       [disabled]="guardando() || !acompanantesValidos()"
     >
       {{ guardando() ? 'Guardando…' : 'Guardar visita' }}

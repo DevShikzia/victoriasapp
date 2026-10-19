@@ -10,6 +10,12 @@ export const routes: Routes = [
     title: 'Ingresar · Victorias',
   },
   {
+    path: 'buscar',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/buscar/buscar').then((m) => m.Buscar),
+    title: 'Buscar · Victorias',
+  },
+  {
     path: 'visitas',
     canActivate: [authGuard],
     loadComponent: () => import('./features/visitas/lista-visitas').then((m) => m.ListaVisitas),
@@ -45,6 +51,6 @@ export const routes: Routes = [
     loadComponent: () => import('./features/usuarios/usuarios').then((m) => m.Usuarios),
     title: 'Usuarios · Victorias',
   },
-  { path: '', pathMatch: 'full', redirectTo: 'visitas' },
-  { path: '**', redirectTo: 'visitas' },
+  { path: '', pathMatch: 'full', redirectTo: 'buscar' },
+  { path: '**', redirectTo: 'buscar' },
 ];

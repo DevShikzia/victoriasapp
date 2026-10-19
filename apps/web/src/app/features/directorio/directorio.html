@@ -119,10 +119,12 @@
         <tbody>
           @for (item of items(); track item.id) {
             <tr>
-              @for (columna of columnas(); track columna.clave) {
-                <td>{{ valorVisible(item, columna) }}</td>
+              @for (columna of columnas(); track columna.clave; let i = $index) {
+                <td [attr.data-label]="columna.etiqueta" [class.celda-titulo]="i === 0">
+                  {{ valorVisible(item, columna) }}
+                </td>
               }
-              <td class="acciones">
+              <td class="acciones" data-label="Acciones">
                 <button type="button" class="boton boton--suave" (click)="editar(item)">
                   Editar
                 </button>

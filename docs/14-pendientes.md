@@ -28,6 +28,8 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
       directorio. Mientras tanto, hay datos de ejemplo para probar (ver "Datos de ejemplo" abajo).
 - [ ] Probar el **panel en vivo con varios dispositivos** reales conectados (el canal está testeado a
       nivel API).
+- [ ] Probar la PWA rediseñada en un **celular real**: bottom bar, ficha de búsqueda y formulario
+      con el teclado abierto (incluye `safe-area` en iPhone).
 - [ ] Nombre definitivo del producto (hoy "Victorias · El Pare").
 
 ## 🟢 Hechas
@@ -56,9 +58,14 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
       patente tolerante a tildes, prefijos y errores de tipeo.
 - [x] **ABM de usuarios en el PWA** (`/usuarios`, sólo `admin`): listado con estado activo/inactivo,
       alta, edición (rol, garita y contraseña opcional), baja lógica y reactivación.
+- [x] **Fase 5 — buscador global y rediseño mobile-first:** `/buscar` como inicio con un solo campo
+      (debounce de 200 ms, grupos Personas/Familiares/Vehículos/Lotes y resaltado), ficha informativa
+      por resultado, bottom bar + menú “Más”, tokens de diseño y rediseño de las 7 pantallas + login.
+      En el celular las tablas del panel, directorio y usuarios se leen como tarjetas.
 - [x] Tests: parser + esquemas + CSV/nombre + búsqueda difusa (`shared`, 49), integración de la API
       con Mongo en memoria (`api`, 26) y flujo offline/sync + pull del directorio + ABM del
-      directorio + histórico + búsqueda difusa + ABM de usuarios en el PWA (`web`, 26).
+      directorio + histórico + búsqueda difusa + ABM de usuarios + buscador global en el PWA
+      (`web`, 38).
 
 ---
 

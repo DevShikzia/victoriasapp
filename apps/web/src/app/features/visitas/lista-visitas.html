@@ -1,6 +1,9 @@
 <section class="pantalla">
   <header class="encabezado">
-    <h1>Visitas</h1>
+    <div>
+      <h1>Visitas</h1>
+      <p class="subtitulo">Movimiento de la garita en este celular.</p>
+    </div>
     <a routerLink="/visita/nueva" class="boton boton--acento">+ Nueva visita</a>
   </header>
 
@@ -23,27 +26,33 @@
     <p class="aviso" role="status">{{ texto }}</p>
   }
 
-  <div class="herramientas">
-    <button
-      type="button"
-      class="boton boton--suave"
-      [disabled]="ocupado()"
-      (click)="cargarEjemplo()"
-    >
-      Cargar datos de ejemplo
-    </button>
-    <button type="button" class="boton boton--peligro" [disabled]="ocupado()" (click)="limpiar()">
-      Limpiar datos
-    </button>
-  </div>
+  <details class="demo">
+    <summary>Datos de ejemplo</summary>
+    <div class="herramientas">
+      <button
+        type="button"
+        class="boton boton--suave"
+        [disabled]="ocupado()"
+        (click)="cargarEjemplo()"
+      >
+        Cargar datos de ejemplo
+      </button>
+      <button type="button" class="boton boton--peligro" [disabled]="ocupado()" (click)="limpiar()">
+        Limpiar datos
+      </button>
+    </div>
+  </details>
 
   @if (!datos.listo()) {
     <p class="vacio">Cargando…</p>
   } @else if (datos.visitas().length === 0) {
-    <p class="vacio">
-      Todavía no hay visitas registradas.
-      <a routerLink="/visita/nueva">Registrar la primera</a>.
-    </p>
+    <div class="vacio">
+      <p class="vacio__titulo">Todavía no hay visitas</p>
+      <p class="vacio__texto">
+        <a routerLink="/visita/nueva">Registrá la primera</a> y va a aparecer acá, incluso sin
+        conexión.
+      </p>
+    </div>
   } @else {
     <ul class="lista">
       @for (visita of ordenadas(); track visita.uuid) {

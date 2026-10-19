@@ -97,10 +97,27 @@ el problema real (el escaneo) cuanto antes.
 > CSV, y el **ABM de usuarios** (`/usuarios`, sólo admin). El sincronizador baja el directorio a
 > IndexedDB y la búsqueda local es **difusa**. Falta la **edición offline** del directorio (outbox).
 
-## Fase 5 — Pulido
+## Fase 5 — Buscador global y rediseño mobile-first
+
+- [x] Buscador global offline (`/buscar`): un solo campo, debounce 200 ms, grupos
+      Personas/Familiares/Vehículos/Lotes y resaltado de coincidencias.
+- [x] Ficha informativa por resultado (bottom sheet en celular, panel lateral en escritorio) con
+      propietarios, familiares y vehículos relacionados.
+- [x] `Buscar` como pantalla de inicio (`''` y `**` redirigen a `/buscar`).
+- [x] Navegación mobile-first: bottom bar (Buscar · Visitas · Nueva · Panel · Más) y menú “Más”.
+- [x] Sistema de diseño con tokens y clases base en `styles.scss`.
+- [x] Rediseño de login, visitas, nueva visita, captura, panel, directorio y usuarios.
+- [x] Tablas → tarjetas en celular (`data-label`) en panel, directorio y usuarios.
+- [x] Tests del buscador (datos, resaltado y pantalla) y suite completa en verde.
+
+**Entregable:** el guardia encuentra cualquier dato del barrio desde el celular en segundos.
+
+> **Estado:** implementado. Ver
+> [`15-buscador-global-y-rediseno-mobile.md`](./15-buscador-global-y-rediseno-mobile.md).
+
+## Fase 6 — Pulido
 
 - [ ] OCR de MRZ como respaldo (Tesseract.js).
-- [ ] UX final, mensajes, accesibilidad.
 - [ ] Pruebas de campo con guardias.
 - [ ] Política de retención de datos.
 

@@ -37,6 +37,22 @@ La búsqueda **offline** en el PWA (sobre el directorio cacheado) es **difusa**:
 y mayúsculas, por prefijo de palabra y tolerante a errores de tipeo. La búsqueda de la **API**
 (`?q=`) es texto libre insensible a mayúsculas con coincidencia directa.
 
+### Buscador global (`/buscar`)
+
+La pantalla de inicio es un **único campo** que consulta en paralelo propietarios, familiares,
+vehículos y lotes sobre IndexedDB. No hay que elegir pestañas ni apretar “Buscar”: los resultados
+aparecen ~200 ms después de dejar de escribir.
+
+- `DatosService.buscarGlobal()` corre las cuatro búsquedas con `Promise.all` y devuelve los grupos
+  ordenados por relevancia (`ordenarPorCoincidencia`).
+- `DatosService.buscarFamiliares()` es nueva y sigue el mismo patrón difuso que propietarios,
+  vehículos y lotes.
+- La **ficha** cruza los datos por **nombre de propietario normalizado** y **número de lote** (las
+  proyecciones locales no guardan ids de referencia) y muestra titulares, familiares y vehículos
+  relacionados. Es sólo informativa: no navega ni registra visitas.
+- Ejemplos: `ricardo` devuelve todas las personas con ese nombre y su lote; `34` devuelve patentes
+  que lo contienen y el lote `34`; `alamos` encuentra la calle “Los Álamos”.
+
 ## Uso durante un ingreso
 
 1. El guardia escanea el DNI → datos de la persona.

@@ -3,6 +3,7 @@ import type {
   DirectorioPull,
   EntidadDirectorio,
   ErrorSync,
+  FamiliarLocal,
   LoteLocal,
   NuevaVisita,
   PropietarioLocal,
@@ -14,10 +15,12 @@ import {
   META_ULTIMA_SYNC_DIRECTORIO,
   crearIdLocal,
   esquemaVisitaSync,
+  normalizarParaBusqueda,
   normalizarPatente,
   ordenarPorCoincidencia,
 } from '@victoriasapp/shared';
 
+import { RESULTADOS_VACIOS, type ResultadosGlobales } from '../busqueda/tipos';
 import { obtenerBaseLocal } from './base-local';
 import { datosDeEjemplo } from './seed';
 
@@ -223,6 +226,101 @@ export class DatosService {
       v.modelo,
       v.loteNumero,
     ]);
+  }
+
+  /** Busca familiares por nombre, parentesco, propietario o lote. Difusa. */
+  async buscarFamiliares(consulta: string): Promise<readonly FamiliarLocal[]> {
+    const q = consulta.trim();
+    if (q === '') {
+      return [];
+    }
+    const familiares = await this.db.familiares.toArray();
+    return ordenarPorCoincidencia(familiares, q, (f) => [
+      f.nombre,
+      f.parentesco,
+      f.propietarioNombre,
+      f.loteNumero,
+    ]);
+  }
+
+  /**
+   * Buscador global: consulta en paralelo propietarios, familiares, vehículos y
+   * lotes, y devuelve los grupos ya ordenados por relevancia. Es la base de la
+   * pantalla `/buscar` y funciona 100 % offline.
+   */
+  async buscarGlobal(consulta: string): Promise<ResultadosGlobales> {
+    const q = consulta.trim();
+    if (q === '') {
+      return RESULTADOS_VACIOS;
+    }
+
+    const [propietarios, familiares, vehiculos, lotes] = await Promise.all([
+      this.buscarPropietarios(q),
+      this.buscarFamiliares(q),
+      this.buscarVehiculos(q),
+      this.buscarLotes(q),
+    ]);
+
+    return {
+      propietarios,
+      familiares,
+      vehiculos,
+      lotes,
+      total: propietarios.length + familiares.length + vehiculos.length + lotes.length,
+    };
+  }
+
+  /**
+   * Familiares que comparten propietario y/o lote. Se usa para la ficha: las
+   * proyecciones locales no guardan ids de referencia, así que se cruzan por
+   * nombre normalizado y número de lote.
+   */
+  async familiaresRelacionados(
+    propietarioNombre: string | null,
+    loteNumero: string | null,
+  ): Promise<readonly FamiliarLocal[]> {
+    const objetivo = normalizarParaBusqueda(propietarioNombre ?? '');
+    const lote = (loteNumero ?? '').trim();
+    if (objetivo === '' && lote === '') {
+      return [];
+    }
+
+    const familiares = await this.db.familiares.toArray();
+    return familiares.filter(
+      (f) =>
+        (objetivo !== '' && normalizarParaBusqueda(f.propietarioNombre) === objetivo) ||
+        (lote !== '' && (f.loteNumero ?? '').trim() === lote),
+    );
+  }
+
+  /** Vehículos que comparten propietario y/o lote (para la ficha). */
+  async vehiculosRelacionados(
+    propietarioNombre: string | null,
+    loteNumero: string | null,
+  ): Promise<readonly VehiculoLocal[]> {
+    const objetivo = normalizarParaBusqueda(propietarioNombre ?? '');
+    const lote = (loteNumero ?? '').trim();
+    if (objetivo === '' && lote === '') {
+      return [];
+    }
+
+    const vehiculos = await this.db.vehiculos.toArray();
+    return vehiculos.filter(
+      (v) =>
+        (objetivo !== '' && normalizarParaBusqueda(v.propietarioNombre ?? '') === objetivo) ||
+        (lote !== '' && (v.loteNumero ?? '').trim() === lote),
+    );
+  }
+
+  /** Propietarios registrados en un lote (para la ficha del lote). */
+  async propietariosDelLote(loteNumero: string | null): Promise<readonly PropietarioLocal[]> {
+    const lote = (loteNumero ?? '').trim();
+    if (lote === '') {
+      return [];
+    }
+
+    const propietarios = await this.db.propietarios.toArray();
+    return propietarios.filter((p) => (p.loteNumero ?? '').trim() === lote);
   }
 
   async propietarioPorNombre(nombre: string): Promise<PropietarioLocal | undefined> {

@@ -131,12 +131,12 @@
         <tbody>
           @for (u of items(); track u.id) {
             <tr [class.inactivo]="!u.activo">
-              <td>{{ u.usuario }}</td>
-              <td>{{ u.nombre }}</td>
-              <td>{{ u.rol }}</td>
-              <td>{{ u.garitaId ?? '—' }}</td>
-              <td>{{ u.activo ? 'Activo' : 'Inactivo' }}</td>
-              <td class="acciones">
+              <td class="celda-titulo" data-label="Usuario">{{ u.usuario }}</td>
+              <td data-label="Nombre">{{ u.nombre }}</td>
+              <td data-label="Rol">{{ u.rol }}</td>
+              <td data-label="Garita">{{ u.garitaId ?? '—' }}</td>
+              <td data-label="Estado">{{ u.activo ? 'Activo' : 'Inactivo' }}</td>
+              <td class="acciones" data-label="Acciones">
                 <button type="button" class="boton boton--suave" (click)="editar(u)">Editar</button>
                 @if (u.activo) {
                   <button type="button" class="boton boton--peligro" (click)="desactivar(u)">

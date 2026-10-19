@@ -87,4 +87,48 @@ describe('DatosService (offline, IndexedDB)', () => {
     const porPatente = await servicio.buscarVehiculos('ab123');
     expect(porPatente.map((v) => v.patente)).toContain('AB123CD');
   });
+
+  it('busca familiares por nombre, parentesco y propietario', async () => {
+    await servicio.cargarEjemplo();
+
+    const porNombre = await servicio.buscarFamiliares('juan');
+    expect(porNombre.map((f) => f.nombre)).toContain('JUAN PEREZ');
+
+    const porParentesco = await servicio.buscarFamiliares('hijo');
+    expect(porParentesco.map((f) => f.nombre)).toContain('JUAN PEREZ');
+
+    const porPropietario = await servicio.buscarFamiliares('perez');
+    expect(porPropietario.map((f) => f.nombre)).toContain('JUAN PEREZ');
+  });
+
+  it('el buscador global mezcla tipos: un número puede ser patente y lote', async () => {
+    await servicio.cargarEjemplo();
+
+    const resultados = await servicio.buscarGlobal('12');
+    expect(resultados.lotes.map((l) => l.numero)).toContain('12');
+    expect(resultados.vehiculos.map((v) => v.patente)).toContain('AB123CD');
+    expect(resultados.total).toBeGreaterThan(1);
+
+    const porLote = await servicio.buscarGlobal('42');
+    expect(porLote.propietarios.map((p) => p.apellido)).toContain('PEREZ');
+    expect(porLote.familiares.map((f) => f.nombre)).toContain('JUAN PEREZ');
+
+    const vacio = await servicio.buscarGlobal('   ');
+    expect(vacio.total).toBe(0);
+  });
+
+  it('arma las relaciones de la ficha por propietario y lote', async () => {
+    await servicio.cargarEjemplo();
+
+    const familiares = await servicio.familiaresRelacionados('PEREZ, ANA', '42');
+    expect(familiares.map((f) => f.nombre)).toContain('JUAN PEREZ');
+
+    const vehiculos = await servicio.vehiculosRelacionados('PEREZ, ANA', '42');
+    expect(vehiculos.map((v) => v.patente)).toContain('AB123CD');
+
+    const propietarios = await servicio.propietariosDelLote('12');
+    expect(propietarios.map((p) => p.apellido)).toContain('GOMEZ');
+
+    expect(await servicio.propietariosDelLote(null)).toEqual([]);
+  });
 });

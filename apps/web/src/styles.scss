@@ -1,6 +1,51 @@
+/**
+ * Estilos globales y sistema de diseño.
+ *
+ * Los componentes deben usar estos tokens en vez de colores/tamaños sueltos.
+ * Ver docs/15-buscador-global-y-rediseno-mobile.md.
+ */
 :root {
+  /* Paleta */
   --acento: #14532d;
-  --texto-suave: #555;
+  --acento-claro: #1f7a44;
+  --acento-suave: #e7f5ec;
+  --fondo: #f2f5f3;
+  --superficie: #ffffff;
+  --superficie-2: #f7faf8;
+  --borde: #dde5e0;
+  --texto: #14211a;
+  --texto-suave: #5b6b62;
+  --texto-inverso: #ffffff;
+  --alerta: #b45309;
+  --alerta-suave: #fef3c7;
+  --peligro: #b91c1c;
+  --peligro-suave: #fee2e2;
+  --info: #1d4ed8;
+  --info-suave: #dbeafe;
+
+  /* Espaciado */
+  --esp-1: 0.25rem;
+  --esp-2: 0.5rem;
+  --esp-3: 0.75rem;
+  --esp-4: 1rem;
+  --esp-5: 1.5rem;
+  --esp-6: 2rem;
+
+  /* Radios y sombras */
+  --radio-sm: 0.5rem;
+  --radio: 0.75rem;
+  --radio-lg: 1.125rem;
+  --radio-pill: 999px;
+  --sombra-1: 0 1px 2px rgb(20 33 26 / 6%);
+  --sombra-2: 0 6px 18px rgb(20 33 26 / 12%);
+  --sombra-3: 0 -8px 30px rgb(20 33 26 / 18%);
+
+  /* Layout */
+  --tap: 44px;
+  --barra-alto: 56px;
+  --tabbar-alto: 64px;
+  --ancho-pantalla: 56rem;
+
   color-scheme: light;
 }
 
@@ -21,7 +66,153 @@ body {
     'Segoe UI',
     Roboto,
     sans-serif;
-  color: #1a1a1a;
-  background: #f4f6f7;
+  color: var(--texto);
+  background: var(--fondo);
+  line-height: 1.45;
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--acento-claro);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* 16 px evita el zoom automático de iOS al enfocar un campo. */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--acento-claro);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+ * Utilidades compartidas
+ * ------------------------------------------------------------------------ */
+
+.pantalla {
+  width: 100%;
+  max-width: var(--ancho-pantalla);
+  margin: 0 auto;
+  padding: var(--esp-4);
+}
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--esp-2);
+  min-height: var(--tap);
+  padding: 0 var(--esp-4);
+  border: 1px solid transparent;
+  border-radius: var(--radio);
+  background: var(--superficie);
+  color: var(--texto);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    transform 80ms ease;
+}
+
+.boton:active {
+  transform: scale(0.98);
+}
+
+.boton:disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.boton--acento {
+  background: var(--acento);
+  color: var(--texto-inverso);
+}
+
+.boton--suave {
+  background: var(--superficie);
+  border-color: var(--borde);
+}
+
+.boton--peligro {
+  background: var(--peligro-suave);
+  border-color: #fecaca;
+  color: var(--peligro);
+}
+
+.boton--bloque {
+  width: 100%;
+}
+
+.tarjeta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-1);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-1);
+}
+
+.campo > label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.campo > span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 var(--esp-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  color: var(--texto);
+}
+
+.campo textarea {
+  padding: var(--esp-3);
+  resize: vertical;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+  border-color: var(--acento-claro);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--acento-suave);
 }

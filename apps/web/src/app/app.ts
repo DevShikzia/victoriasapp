@@ -27,6 +27,7 @@ export class App implements OnInit, OnDestroy {
   private readonly router = inject(Router);
 
   protected readonly enLinea = signal(navigator.onLine);
+  protected readonly menuAbierto = signal(false);
   protected readonly pendientes = this.datos.pendientes;
   protected readonly usuario = this.sesion.usuario;
   protected readonly autenticado = this.sesion.autenticado;
@@ -70,7 +71,21 @@ export class App implements OnInit, OnDestroy {
     await this.sincro.sincronizar();
   }
 
+  protected alternarMenu(): void {
+    this.menuAbierto.update((abierto) => !abierto);
+  }
+
+  protected cerrarMenu(): void {
+    this.menuAbierto.set(false);
+  }
+
+  protected async sincronizarDesdeMenu(): Promise<void> {
+    this.cerrarMenu();
+    await this.sincronizar();
+  }
+
   protected async salir(): Promise<void> {
+    this.cerrarMenu();
     await this.sesion.logout();
     await this.router.navigate(['/login']);
   }

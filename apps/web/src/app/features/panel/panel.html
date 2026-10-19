@@ -1,8 +1,15 @@
 <section class="panel">
   <header class="encabezado">
-    <h2>{{ modo() === 'vivo' ? 'Panel en vivo' : 'Histórico de visitas' }}</h2>
+    <div class="encabezado__fila">
+      <h2>{{ modo() === 'vivo' ? 'Panel en vivo' : 'Histórico de visitas' }}</h2>
 
-    <nav class="tabs">
+      <span class="enlace" [class.enlace--on]="tiempoReal.conectado()">
+        <span class="punto" [class.punto--on]="tiempoReal.conectado()"></span>
+        {{ tiempoReal.conectado() ? 'Tiempo real' : 'Sin tiempo real' }}
+      </span>
+    </div>
+
+    <nav class="tabs" aria-label="Modo del panel">
       <button
         type="button"
         class="tab"
@@ -20,11 +27,6 @@
         Histórico
       </button>
     </nav>
-
-    <span class="enlace" [class.enlace--on]="tiempoReal.conectado()">
-      <span class="punto" [class.punto--on]="tiempoReal.conectado()"></span>
-      {{ tiempoReal.conectado() ? 'Tiempo real activo' : 'Sin tiempo real' }}
-    </span>
   </header>
 
   @if (mensaje(); as aviso) {
@@ -52,7 +54,9 @@
     }
 
     <div class="herramientas">
-      <button type="button" class="boton" (click)="exportarCsv()">Exportar abiertas</button>
+      <button type="button" class="boton boton--suave" (click)="exportarCsv()">
+        Exportar abiertas
+      </button>
     </div>
 
     @if (abiertas().length === 0) {
@@ -74,13 +78,15 @@
           <tbody>
             @for (fila of abiertas(); track fila.uuid) {
               <tr>
-                <td class="nombre">{{ fila.apellido }}, {{ fila.nombre }}</td>
-                <td>{{ fila.dni }}</td>
-                <td>{{ fila.patente ?? '—' }}</td>
-                <td>{{ fila.loteNumero ?? '—' }}</td>
-                <td>{{ fila.motivo ?? '—' }}</td>
-                <td>{{ fila.entradaEn | date: 'HH:mm' }}</td>
-                <td>
+                <td class="nombre celda-titulo" data-label="Visitante">
+                  {{ fila.apellido }}, {{ fila.nombre }}
+                </td>
+                <td data-label="DNI">{{ fila.dni }}</td>
+                <td data-label="Patente">{{ fila.patente ?? '—' }}</td>
+                <td data-label="Lote">{{ fila.loteNumero ?? '—' }}</td>
+                <td data-label="Motivo">{{ fila.motivo ?? '—' }}</td>
+                <td data-label="Entrada">{{ fila.entradaEn | date: 'HH:mm' }}</td>
+                <td data-label="Origen">
                   <span class="chip" [class.chip--red]="fila.origen === 'red'">{{
                     fila.origen
                   }}</span>
@@ -132,7 +138,7 @@
       <div class="filtros-acciones">
         <button
           type="button"
-          class="boton"
+          class="boton boton--acento"
           (click)="buscarHistorial()"
           [disabled]="cargandoHistorial()"
         >
@@ -175,13 +181,17 @@
           <tbody>
             @for (fila of historial(); track fila.uuid) {
               <tr>
-                <td class="nombre">{{ fila.apellido }}, {{ fila.nombre }}</td>
-                <td>{{ fila.dni }}</td>
-                <td>{{ fila.patente ?? '—' }}</td>
-                <td>{{ fila.loteNumero ?? '—' }}</td>
-                <td>{{ fila.entradaEn | date: 'dd/MM HH:mm' }}</td>
-                <td>{{ fila.salidaEn === null ? '—' : (fila.salidaEn | date: 'dd/MM HH:mm') }}</td>
-                <td>
+                <td class="nombre celda-titulo" data-label="Visitante">
+                  {{ fila.apellido }}, {{ fila.nombre }}
+                </td>
+                <td data-label="DNI">{{ fila.dni }}</td>
+                <td data-label="Patente">{{ fila.patente ?? '—' }}</td>
+                <td data-label="Lote">{{ fila.loteNumero ?? '—' }}</td>
+                <td data-label="Entrada">{{ fila.entradaEn | date: 'dd/MM HH:mm' }}</td>
+                <td data-label="Salida">
+                  {{ fila.salidaEn === null ? '—' : (fila.salidaEn | date: 'dd/MM HH:mm') }}
+                </td>
+                <td data-label="Estado">
                   <span class="chip" [class.chip--dentro]="fila.salidaEn === null">{{
                     fila.salidaEn === null ? 'dentro' : 'fuera'
                   }}</span>
