@@ -22,7 +22,7 @@ la pantalla chica y después se aprovecha el ancho en escritorio. Ver
 | Escritorio (`≥ 768px`) | Barra superior con todos los enlaces + sesión. |
 
 - **Buscar** es la pantalla de inicio (después de elegir barrio).
-- **Propietarios** es el listado rápido con búsqueda y orden por lote/alfabético.
+- **Propietarios** es el listado rápido con búsqueda, orden por lote/alfabético y agrupación por lote.
 - **Nueva** es la acción principal y se destaca con un botón circular.
 - **Más** abre una hoja con `Panel`, `Captura`, `Directorio` (admin/supervisor), `Usuarios` (admin),
   `Sincronizar`, el barrio activo y `Salir`.

@@ -90,6 +90,71 @@
   }
 }
 
+.barra-grupos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-3);
+}
+
+.orden-grupos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  select {
+    min-height: var(--tap);
+    padding: 0 var(--esp-2);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    background: var(--superficie);
+    color: var(--texto);
+    font-size: 0.9rem;
+    text-transform: none;
+  }
+}
+
+.multiselect {
+  display: grid;
+  gap: 0.25rem;
+  max-height: 16rem;
+  padding: 0.45rem;
+  overflow-y: auto;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie-2);
+}
+
+.opcion-multiple {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  min-height: 2.2rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radio-sm);
+  color: var(--texto);
+  font-size: 0.88rem;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--superficie);
+  }
+
+  input {
+    flex: none;
+    width: 1.15rem;
+    height: 1.15rem;
+    min-height: 0;
+    margin: 0.05rem 0 0;
+  }
+}
+
 .editor {
   margin-bottom: var(--esp-4);
   padding: var(--esp-3);
@@ -152,6 +217,71 @@
 
 .editor-acciones .boton {
   flex: 1 1 auto;
+}
+
+/* --------------------------------------------------------------------------
+ * Propietarios agrupados por lote
+ * ------------------------------------------------------------------------ */
+
+.grupos {
+  display: grid;
+  gap: var(--esp-3);
+}
+
+.grupo-lote {
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  background: var(--superficie);
+  box-shadow: var(--sombra-1);
+}
+
+.grupo-lote__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  padding: var(--esp-2) var(--esp-3);
+  border-bottom: 1px solid var(--borde);
+  background: var(--superficie-2);
+
+  strong {
+    font-size: 0.95rem;
+  }
+
+  span {
+    color: var(--texto-suave);
+    font-size: 0.76rem;
+    font-weight: 600;
+  }
+}
+
+.grupo-lote__lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-3);
+    padding: 0.65rem var(--esp-3);
+    border-bottom: 1px solid var(--borde);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+}
+
+.grupo-lote__nombre {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.grupo-lote .acciones {
+  flex: none;
 }
 
 /* --------------------------------------------------------------------------
@@ -329,6 +459,19 @@ th {
   }
 
   .tabla td.acciones .boton {
+    flex: 1 1 7rem;
+  }
+
+  .grupo-lote__lista li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .grupo-lote .acciones {
+    width: 100%;
+  }
+
+  .grupo-lote .acciones .boton {
     flex: 1 1 7rem;
   }
 }

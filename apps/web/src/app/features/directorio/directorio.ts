@@ -16,6 +16,7 @@ import {
   type ResultadoImportacion,
 } from '@victoriasapp/shared';
 
+import { SesionService } from '../../core/auth/sesion.service';
 import {
   DirectorioAdminService,
   type FiltroDirectorio,
@@ -37,6 +38,17 @@ type ModeloFormulario = Record<string, ValorFormulario>;
 interface OpcionFormulario {
   readonly valor: string;
   readonly etiqueta: string;
+}
+
+type OrdenGrupos = 'lote' | 'senor' | 'senora';
+
+/** Propietarios de un mismo lote reunidos para el listado agrupado. */
+interface GrupoPropietarios {
+  readonly clave: string;
+  readonly etiquetaLote: string;
+  readonly numero: string;
+  readonly sinLote: boolean;
+  readonly propietarios: readonly RegistroDirectorio[];
 }
 
 /** Convierte un valor desconocido en una lista de ids de texto. */
@@ -117,11 +129,16 @@ function etiquetaDeRegistro(entidad: EntidadDirectorio, registro: RegistroDirect
 export class Directorio implements OnInit {
   private readonly api = inject(DirectorioAdminService);
   private readonly sincro = inject(SincronizadorService);
+  private readonly sesion = inject(SesionService);
 
   /** El barrio ya no se edita acá: se elige al iniciar sesión. */
   protected readonly entidades = ENTIDADES_DIRECTORIO.filter((entidad) => entidad !== 'barrio');
   protected readonly entidad = signal<EntidadDirectorio>('propietario');
   protected readonly consulta = signal('');
+  protected readonly barrioNombre = this.sesion.barrioNombre;
+
+  protected readonly agruparPropietarios = signal(false);
+  protected readonly ordenGrupos = signal<OrdenGrupos>('lote');
 
   protected readonly items = signal<readonly RegistroDirectorio[]>([]);
   private readonly referencias = signal<
@@ -144,6 +161,9 @@ export class Directorio implements OnInit {
   protected readonly columnas = computed<readonly ColumnaEntidad[]>(() => this.config().columnas);
   protected readonly campos = computed<readonly CampoEntidad[]>(() => this.config().campos);
   protected readonly busqueda = computed(() => this.config().busqueda);
+  protected readonly gruposPropietarios = computed<readonly GrupoPropietarios[]>(() =>
+    this.armarGruposPropietarios(),
+  );
 
   ngOnInit(): void {
     void this.iniciar();
@@ -231,6 +251,16 @@ export class Directorio implements OnInit {
     return this.valorVisible(registro, this.columnas()[0] ?? { clave: 'id', etiqueta: 'id' });
   }
 
+  protected alternarAgrupacion(): void {
+    this.agruparPropietarios.update((agrupado) => !agrupado);
+  }
+
+  protected cambiarOrdenGrupos(valor: string): void {
+    if (valor === 'lote' || valor === 'senor' || valor === 'senora') {
+      this.ordenGrupos.set(valor);
+    }
+  }
+
   // --- Formulario ---
 
   protected nuevo(): void {
@@ -285,6 +315,23 @@ export class Directorio implements OnInit {
       return;
     }
     this.modelo.update((modelo) => ({ ...modelo, [clave]: valor }));
+  }
+
+  protected estaSeleccionado(clave: string, valor: string): boolean {
+    return comoArreglo(this.modelo()[clave]).includes(valor);
+  }
+
+  protected alternarOpcion(clave: string, valor: string, evento: Event): void {
+    if (!(evento.target instanceof HTMLInputElement)) {
+      return;
+    }
+    const seleccionados = new Set(comoArreglo(this.modelo()[clave]));
+    if (evento.target.checked) {
+      seleccionados.add(valor);
+    } else {
+      seleccionados.delete(valor);
+    }
+    this.actualizarCampo(clave, [...seleccionados]);
   }
 
   protected opciones(campo: CampoEntidad): readonly OpcionFormulario[] {
@@ -436,6 +483,115 @@ export class Directorio implements OnInit {
     return modelo;
   }
 
+  /**
+   * Agrupa los propietarios visibles por lote. Si la búsqueda devuelve un solo
+   * titular, el grupo igual muestra a todos los propietarios de ese lote.
+   */
+  private armarGruposPropietarios(): readonly GrupoPropietarios[] {
+    if (this.entidad() !== 'propietario') {
+      return [];
+    }
+    const porId = new Map<string, RegistroDirectorio>();
+    for (const propietario of this.referencias().propietario) {
+      porId.set(texto(valorDe(propietario, 'id')), propietario);
+    }
+    for (const propietario of this.items()) {
+      porId.set(texto(valorDe(propietario, 'id')), propietario);
+    }
+
+    const lotesVisibles = new Set(
+      this.items().map((propietario) => texto(valorDe(propietario, 'loteId'))),
+    );
+    const grupos = new Map<
+      string,
+      { numero: string; sinLote: boolean; propietarios: RegistroDirectorio[] }
+    >();
+    for (const propietario of porId.values()) {
+      const loteId = texto(valorDe(propietario, 'loteId'));
+      if (!lotesVisibles.has(loteId)) {
+        continue;
+      }
+      const clave = loteId === '' ? 'sin-lote' : loteId;
+      const lote =
+        loteId === ''
+          ? undefined
+          : this.referencias().lote.find((registro) => texto(valorDe(registro, 'id')) === loteId);
+      const numero = lote === undefined ? '' : texto(valorDe(lote, 'numero'));
+      let grupo = grupos.get(clave);
+      if (grupo === undefined) {
+        grupo = { numero, sinLote: loteId === '', propietarios: [] };
+        grupos.set(clave, grupo);
+      }
+      grupo.propietarios.push(propietario);
+    }
+
+    return [...grupos.entries()]
+      .map(([clave, grupo]) => ({
+        clave,
+        numero: grupo.numero,
+        sinLote: grupo.sinLote,
+        etiquetaLote: grupo.sinLote
+          ? 'Sin lote'
+          : grupo.numero === ''
+            ? 'Lote sin número'
+            : `Lote ${grupo.numero}`,
+        propietarios: grupo.propietarios.slice().sort((a, b) => this.compararPropietarios(a, b)),
+      }))
+      .sort((a, b) => this.compararGrupos(a, b));
+  }
+
+  private compararGrupos(a: GrupoPropietarios, b: GrupoPropietarios): number {
+    const orden = this.ordenGrupos();
+    if (orden === 'lote') {
+      return this.compararLotes(a, b);
+    }
+    const tratamiento = orden;
+    const propietarioA = this.propietarioParaOrden(a, tratamiento);
+    const propietarioB = this.propietarioParaOrden(b, tratamiento);
+    if (propietarioA === undefined || propietarioB === undefined) {
+      if (propietarioA === propietarioB) {
+        return this.compararLotes(a, b);
+      }
+      return propietarioA === undefined ? 1 : -1;
+    }
+    const porNombre = etiquetaDeRegistro('propietario', propietarioA).localeCompare(
+      etiquetaDeRegistro('propietario', propietarioB),
+      'es',
+      { sensitivity: 'base', numeric: true },
+    );
+    return porNombre !== 0 ? porNombre : this.compararLotes(a, b);
+  }
+
+  private compararLotes(a: GrupoPropietarios, b: GrupoPropietarios): number {
+    if (a.sinLote !== b.sinLote) {
+      return a.sinLote ? 1 : -1;
+    }
+    if (a.numero === '' || b.numero === '') {
+      if (a.numero === b.numero) {
+        return 0;
+      }
+      return a.numero === '' ? 1 : -1;
+    }
+    const numeroA = Number.parseFloat(a.numero);
+    const numeroB = Number.parseFloat(b.numero);
+    if (Number.isFinite(numeroA) && Number.isFinite(numeroB) && numeroA !== numeroB) {
+      return numeroA - numeroB;
+    }
+    return a.numero.localeCompare(b.numero, 'es', { sensitivity: 'base', numeric: true });
+  }
+
+  private propietarioParaOrden(
+    grupo: GrupoPropietarios,
+    tratamiento: 'senor' | 'senora',
+  ): RegistroDirectorio | undefined {
+    return (
+      grupo.propietarios.find(
+        (propietario) =>
+          normalizarTratamiento(texto(valorDe(propietario, 'tratamiento'))) === tratamiento,
+      ) ?? grupo.propietarios[0]
+    );
+  }
+
   /** Propietarios de un lote, ordenados por jerarquía (señor, señora, …). */
   private propietariosDeLote(loteId: string): readonly RegistroDirectorio[] {
     if (loteId === '') {
@@ -467,7 +623,7 @@ export class Directorio implements OnInit {
         });
   }
 
-  private etiquetaPropietario(propietario: RegistroDirectorio): string {
+  protected etiquetaPropietario(propietario: RegistroDirectorio): string {
     const tratamiento = etiquetaTratamiento(
       normalizarTratamiento(texto(valorDe(propietario, 'tratamiento'))),
     );

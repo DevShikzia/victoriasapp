@@ -54,26 +54,79 @@
     }
   </div>
 
-  <div class="orden" role="group" aria-label="Ordenar propietarios">
+  <div class="orden" role="group" aria-label="Agrupar propietarios">
     <button
       type="button"
       class="orden__opcion"
-      [class.orden__opcion--activa]="criterio() === 'lote'"
-      [attr.aria-pressed]="criterio() === 'lote'"
-      (click)="ordenarPor('lote')"
+      [class.orden__opcion--activa]="!agrupar()"
+      [attr.aria-pressed]="!agrupar()"
+      (click)="verPorSeparado()"
     >
-      Por lote
+      Por separado
     </button>
     <button
       type="button"
       class="orden__opcion"
-      [class.orden__opcion--activa]="criterio() === 'alfabetico'"
-      [attr.aria-pressed]="criterio() === 'alfabetico'"
-      (click)="ordenarPor('alfabetico')"
+      [class.orden__opcion--activa]="agrupar()"
+      [attr.aria-pressed]="agrupar()"
+      (click)="agruparPorLote()"
     >
-      Alfabético (A–Z)
+      Agrupar por lote
     </button>
   </div>
+
+  @if (agrupar()) {
+    <div class="orden" role="group" aria-label="Ordenar grupos de propietarios">
+      <button
+        type="button"
+        class="orden__opcion"
+        [class.orden__opcion--activa]="ordenGrupos() === 'lote'"
+        [attr.aria-pressed]="ordenGrupos() === 'lote'"
+        (click)="ordenarGruposPor('lote')"
+      >
+        Por lote
+      </button>
+      <button
+        type="button"
+        class="orden__opcion"
+        [class.orden__opcion--activa]="ordenGrupos() === 'senor'"
+        [attr.aria-pressed]="ordenGrupos() === 'senor'"
+        (click)="ordenarGruposPor('senor')"
+      >
+        Alfabético por señor
+      </button>
+      <button
+        type="button"
+        class="orden__opcion"
+        [class.orden__opcion--activa]="ordenGrupos() === 'senora'"
+        [attr.aria-pressed]="ordenGrupos() === 'senora'"
+        (click)="ordenarGruposPor('senora')"
+      >
+        Alfabético por señora
+      </button>
+    </div>
+  } @else {
+    <div class="orden" role="group" aria-label="Ordenar propietarios">
+      <button
+        type="button"
+        class="orden__opcion"
+        [class.orden__opcion--activa]="criterio() === 'lote'"
+        [attr.aria-pressed]="criterio() === 'lote'"
+        (click)="ordenarPor('lote')"
+      >
+        Por lote
+      </button>
+      <button
+        type="button"
+        class="orden__opcion"
+        [class.orden__opcion--activa]="criterio() === 'alfabetico'"
+        [attr.aria-pressed]="criterio() === 'alfabetico'"
+        (click)="ordenarPor('alfabetico')"
+      >
+        Alfabético (A–Z)
+      </button>
+    </div>
+  }
 
   @if (cargando()) {
     <p class="propietarios__estado">Cargando propietarios…</p>
@@ -89,6 +142,64 @@
         <p class="propietarios__vacio-texto">
           Sincronizá el directorio desde la barra superior para verlos acá.
         </p>
+      }
+    </div>
+  } @else if (agrupar()) {
+    <div class="grupos">
+      @for (grupo of grupos(); track grupo.clave) {
+        <section class="grupo">
+          <header class="grupo__cabecera">
+            <h2>{{ grupo.loteNumero === null ? 'Sin lote' : 'Lote ' + grupo.loteNumero }}</h2>
+            <span>
+              {{ grupo.propietarios.length }}
+              {{ grupo.propietarios.length === 1 ? 'propietario' : 'propietarios' }}
+            </span>
+          </header>
+          <ul class="lista">
+            @for (propietario of grupo.propietarios; track propietario.uuid) {
+              <li class="lista__item">
+                <button type="button" class="propietario" (click)="abrir(propietario)">
+                  <span class="propietario__lote" aria-hidden="true">
+                    {{ propietario.loteNumero ?? '—' }}
+                  </span>
+
+                  <span class="propietario__cuerpo">
+                    <span class="propietario__nombre">
+                      {{ propietario.apellido }}, {{ propietario.nombre }}
+                    </span>
+
+                    <span class="propietario__meta">
+                      @if (etiqueta(propietario.tratamiento); as tratamiento) {
+                        <span
+                          class="tratamiento"
+                          [class.tratamiento--senora]="propietario.tratamiento === 'senora'"
+                        >
+                          {{ tratamiento }}
+                        </span>
+                      }
+                      @if (propietario.telefono !== null) {
+                        <span>{{ propietario.telefono }}</span>
+                      }
+                    </span>
+                  </span>
+
+                  <svg
+                    class="propietario__flecha"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </li>
+            }
+          </ul>
+        </section>
       }
     </div>
   } @else {

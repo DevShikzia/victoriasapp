@@ -70,7 +70,6 @@ export const CONFIG_ENTIDADES: Readonly<Record<EntidadDirectorio, ConfigEntidad>
     ],
     campos: [
       { clave: 'numero', etiqueta: 'Número', tipo: 'texto', requerido: true },
-      { clave: 'barrioId', etiqueta: 'Barrio', tipo: 'seleccion', fuente: 'barrio' },
       { clave: 'calle', etiqueta: 'Calle', tipo: 'texto' },
       { clave: 'notas', etiqueta: 'Notas', tipo: 'texto' },
     ],

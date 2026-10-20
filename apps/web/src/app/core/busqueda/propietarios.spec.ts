@@ -1,6 +1,7 @@
 import type { PropietarioLocal, TratamientoPropietario } from '@victoriasapp/shared';
 
 import {
+  agruparPropietarios,
   buscarYOrdenarPropietarios,
   filtrarPropietarios,
   ordenarPropietarios,
@@ -98,5 +99,43 @@ describe('filtrarPropietarios', () => {
   it('aplica búsqueda y orden juntos', () => {
     const resultado = buscarYOrdenarPropietarios(lista, 'gomez', 'lote');
     expect(resultado.map((p) => p.nombre)).toEqual(['Juan']);
+  });
+});
+
+describe('agruparPropietarios', () => {
+  const lista = [
+    propietario('Ana', 'Diaz', '1', 'senora'),
+    propietario('Beto', 'Gomez', '1', 'senor'),
+    propietario('Maria', 'Alvarez', '2', 'senora'),
+    propietario('Juan', 'Perez', '2', 'senor'),
+    propietario('Carla', 'Gomez', '10', 'senora'),
+    propietario('Carlos', 'Diaz', '10', 'senor'),
+  ];
+
+  it('muestra juntos a todos los propietarios del lote y los ordena por jerarquía', () => {
+    const grupos = agruparPropietarios(lista, '', 'lote');
+
+    expect(grupos.map((grupo) => grupo.loteNumero)).toEqual(['1', '2', '10']);
+    expect(grupos[1]?.propietarios.map((p) => p.nombre)).toEqual(['Juan', 'Maria']);
+  });
+
+  it('si la búsqueda coincide con un titular, conserva todo el grupo del lote', () => {
+    const grupos = agruparPropietarios(lista, 'Alvarez', 'lote');
+
+    expect(grupos.length).toBe(1);
+    expect(grupos[0]?.loteNumero).toBe('2');
+    expect(grupos[0]?.propietarios.map((p) => p.nombre)).toEqual(['Juan', 'Maria']);
+  });
+
+  it('ordena los grupos alfabéticamente por el señor', () => {
+    const grupos = agruparPropietarios(lista, '', 'senor');
+
+    expect(grupos.map((grupo) => grupo.loteNumero)).toEqual(['10', '1', '2']);
+  });
+
+  it('ordena los grupos alfabéticamente por la señora', () => {
+    const grupos = agruparPropietarios(lista, '', 'senora');
+
+    expect(grupos.map((grupo) => grupo.loteNumero)).toEqual(['2', '1', '10']);
   });
 });

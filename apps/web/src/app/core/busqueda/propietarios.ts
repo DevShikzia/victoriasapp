@@ -9,6 +9,16 @@ import {
 /** Cómo se ordena el listado rápido de propietarios. */
 export type CriterioOrdenPropietarios = 'lote' | 'alfabetico';
 
+/** Cómo se ordenan los grupos cuando se muestran juntos por lote. */
+export type OrdenGruposPropietarios = 'lote' | 'senor' | 'senora';
+
+/** Propietarios de un mismo lote reunidos para el listado agrupado. */
+export interface GrupoPropietariosLocal {
+  readonly clave: string;
+  readonly loteNumero: string | null;
+  readonly propietarios: readonly PropietarioLocal[];
+}
+
 function compararTexto(a: string, b: string): number {
   return a.localeCompare(b, 'es', { sensitivity: 'base', numeric: true });
 }
@@ -88,4 +98,71 @@ export function buscarYOrdenarPropietarios(
   criterio: CriterioOrdenPropietarios,
 ): readonly PropietarioLocal[] {
   return ordenarPropietarios(filtrarPropietarios(propietarios, consulta), criterio);
+}
+
+function claveLote(propietario: PropietarioLocal): string {
+  return (propietario.loteNumero ?? '').trim();
+}
+
+function compararGrupos(
+  a: GrupoPropietariosLocal,
+  b: GrupoPropietariosLocal,
+  orden: OrdenGruposPropietarios,
+): number {
+  if (orden !== 'lote') {
+    const propietarioA =
+      a.propietarios.find((propietario) => propietario.tratamiento === orden) ?? a.propietarios[0];
+    const propietarioB =
+      b.propietarios.find((propietario) => propietario.tratamiento === orden) ?? b.propietarios[0];
+    const porNombre = compararNombre(propietarioA, propietarioB);
+    if (porNombre !== 0) {
+      return porNombre;
+    }
+  }
+
+  const loteA = a.loteNumero ?? '';
+  const loteB = b.loteNumero ?? '';
+  if (loteA === '' && loteB !== '') {
+    return 1;
+  }
+  if (loteB === '' && loteA !== '') {
+    return -1;
+  }
+  return compararTexto(loteA, loteB);
+}
+
+/**
+ * Agrupa los propietarios por lote. Si la búsqueda coincide con un titular, el
+ * grupo muestra igual a todos los propietarios de ese lote. Los grupos se pueden
+ * ordenar por lote o alfabéticamente por el señor o la señora.
+ */
+export function agruparPropietarios(
+  propietarios: readonly PropietarioLocal[],
+  consulta: string,
+  orden: OrdenGruposPropietarios,
+): readonly GrupoPropietariosLocal[] {
+  const visibles = filtrarPropietarios(propietarios, consulta);
+  const lotesVisibles = new Set(visibles.map(claveLote));
+  const grupos = new Map<string, PropietarioLocal[]>();
+
+  for (const propietario of propietarios) {
+    const clave = claveLote(propietario);
+    if (!lotesVisibles.has(clave)) {
+      continue;
+    }
+    const existentes = grupos.get(clave);
+    if (existentes === undefined) {
+      grupos.set(clave, [propietario]);
+    } else {
+      existentes.push(propietario);
+    }
+  }
+
+  return [...grupos.entries()]
+    .map(([clave, lista]) => ({
+      clave: clave === '' ? 'sin-lote' : clave,
+      loteNumero: clave === '' ? null : clave,
+      propietarios: ordenarPropietarios(lista, 'lote'),
+    }))
+    .sort((a, b) => compararGrupos(a, b, orden));
 }

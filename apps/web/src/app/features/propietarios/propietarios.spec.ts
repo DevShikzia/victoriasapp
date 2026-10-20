@@ -84,4 +84,20 @@ describe('Propietarios (listado rápido)', () => {
     );
     expect(nombres).toEqual(['DIAZ, MARIA', 'GOMEZ, LUIS', 'PEREZ, ANA']);
   });
+
+  it('agrupa los propietarios por lote y permite ordenar por señor o señora', async () => {
+    const fixture = await crearComponente();
+
+    const html = fixture.nativeElement as HTMLElement;
+    const agrupar = [...html.querySelectorAll<HTMLButtonElement>('.orden__opcion')].find((nodo) =>
+      nodo.textContent.includes('Agrupar por lote'),
+    );
+    agrupar?.click();
+    fixture.detectChanges();
+
+    expect(html.querySelectorAll('.grupo').length).toBe(3);
+    expect(html.textContent).toContain('Lote 42');
+    expect(html.textContent).toContain('Alfabético por señor');
+    expect(html.textContent).toContain('Alfabético por señora');
+  });
 });

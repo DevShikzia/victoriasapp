@@ -100,7 +100,41 @@
 
 .orden {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--esp-2);
+}
+
+.grupos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+}
+
+.grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-2);
+  padding-left: var(--esp-3);
+  border-left: 3px solid var(--acento-suave);
+}
+
+.grupo__cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--esp-2);
+  padding-right: var(--esp-2);
+
+  h2 {
+    font-size: 1rem;
+    letter-spacing: -0.01em;
+  }
+
+  span {
+    color: var(--texto-suave);
+    font-size: 0.76rem;
+    font-weight: 600;
+  }
 }
 
 .orden__opcion {

@@ -77,6 +77,9 @@ Propietarios · Nueva · Visitas · Más`). La pantalla:
 - Lista los propietarios del barrio activo desde IndexedDB (funciona sin conexión).
 - Busca por **nombre/apellido** o **número de lote**.
 - Ordena por **lote** (por defecto, comparación numérica) o **alfabético** (apellido y nombre).
+- El botón **Agrupar por lote** muestra juntos a todos los propietarios de un mismo lote. Si la
+  búsqueda coincide con un solo titular, el grupo igual conserva a todos los propietarios de ese lote.
+  Los grupos se pueden ordenar por **lote**, **alfabético por señor** o **alfabético por señora**.
 - Dentro de un mismo lote: primero **señor**, después **señora**; si hay un solo titular, queda solo.
 - Al tocar una fila abre la misma ficha reutilizable que el buscador global
   (`FichaDirectorio`) con familiares y vehículos relacionados.
@@ -115,12 +118,14 @@ La pantalla de administración (`apps/web/src/app/features/directorio/`) permite
 contra la API, sólo para `admin`/`supervisor`:
 
 - Pestañas por entidad (lotes, propietarios, familiares, vehículos) con buscador. **Barrios no tiene
-  pestaña**: se elige al iniciar sesión.
+  pestaña**: se elige al iniciar sesión. En **Propietarios**, el botón **Agrupar propietarios por
+  lote** reúne a los titulares del mismo lote y permite ordenar los grupos por lote o alfabéticamente
+  por señor/señora.
 - Alta, edición y borrado (con confirmación). Los desplegables de referencias (`barrioId`, `loteId`,
   `propietarioId`, …) salen de las listas cargadas al entrar; `barrioId` sólo contiene el barrio
   activo. El alta/edición de propietarios incluye el **lote** y el **tratamiento**
-  (`Señor` / `Señora`). El formulario de lotes **no** elige propietario: muestra la lista derivada
-  de titulares.
+  (`Señor` / `Señora`). El formulario de lotes **no** elige barrio ni propietario: se crea en el
+  barrio activo (se muestra como campo fijo) y los titulares se asignan desde Propietarios.
 - En vehículos se elige primero el **lote** y después, en un multiselect, sus propietarios y
   familiares que usan el vehículo. La patente puede quedar vacía.
 - Importación de CSV: subiendo un archivo o pegando el contenido, siempre en el barrio activo.

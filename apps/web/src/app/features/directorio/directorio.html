@@ -37,6 +37,31 @@
     <button type="button" class="boton" (click)="recargar()">Buscar</button>
   </div>
 
+  @if (entidad() === 'propietario') {
+    <div class="barra-grupos">
+      <button
+        type="button"
+        class="boton"
+        [class.boton--suave]="agruparPropietarios()"
+        (click)="alternarAgrupacion()"
+      >
+        {{
+          agruparPropietarios() ? 'Ver propietarios por separado' : 'Agrupar propietarios por lote'
+        }}
+      </button>
+      @if (agruparPropietarios()) {
+        <label class="orden-grupos">
+          <span>Ordenar grupos</span>
+          <select [ngModel]="ordenGrupos()" (ngModelChange)="cambiarOrdenGrupos($event)">
+            <option value="lote">Por lote</option>
+            <option value="senor">Alfabético por señor</option>
+            <option value="senora">Alfabético por señora</option>
+          </select>
+        </label>
+      }
+    </div>
+  }
+
   <div class="editor">
     <div class="editor-titulo">
       <h2>
@@ -51,14 +76,21 @@
 
     @if (entidad() === 'lote') {
       <p class="ayuda">
-        Los propietarios se asignan desde la pestaña <b>Propietarios</b>. Al elegirles un lote,
-        aparecen automáticamente acá ordenados por jerarquía (señor, señora, …).
+        El lote se crea en el <b>barrio activo</b> de tu cuenta. Los propietarios se asignan desde
+        la pestaña <b>Propietarios</b> y aparecen automáticamente acá ordenados por jerarquía
+        (señor, señora, …).
       </p>
     }
 
     <div class="campos">
-      @for (campo of campos(); track campo.clave) {
+      @if (entidad() === 'lote') {
         <label class="campo">
+          <span class="etiqueta">Barrio</span>
+          <input type="text" [value]="barrioNombre() ?? 'Barrio activo'" disabled />
+        </label>
+      }
+      @for (campo of campos(); track campo.clave) {
+        <div class="campo">
           <span class="etiqueta">
             {{ campo.etiqueta }}
             @if (campo.requerido) {
@@ -69,12 +101,14 @@
             @case ('booleano') {
               <input
                 type="checkbox"
+                [attr.aria-label]="campo.etiqueta"
                 [ngModel]="valorModelo(campo.clave)"
                 (ngModelChange)="actualizarCampo(campo.clave, $event)"
               />
             }
             @case ('seleccion') {
               <select
+                [attr.aria-label]="campo.etiqueta"
                 [ngModel]="valorModelo(campo.clave)"
                 (ngModelChange)="actualizarCampo(campo.clave, $event)"
               >
@@ -85,16 +119,6 @@
               </select>
             }
             @case ('multiseleccion') {
-              <select
-                multiple
-                [ngModel]="valorModelo(campo.clave)"
-                (ngModelChange)="actualizarCampo(campo.clave, $event)"
-                [disabled]="campo.opcionesDeLote === true && valorModelo('loteId') === ''"
-              >
-                @for (opcion of opciones(campo); track opcion.valor) {
-                  <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
-                }
-              </select>
               @if (campo.opcionesDeLote === true && valorModelo('loteId') === '') {
                 <small class="ayuda"
                   >Elegí primero un lote para ver sus propietarios y familiares.</small
@@ -103,17 +127,31 @@
                 <small class="ayuda">
                   Ese lote no tiene propietarios ni familiares cargados.
                 </small>
+              } @else {
+                <div class="multiselect" role="group" [attr.aria-label]="campo.etiqueta">
+                  @for (opcion of opciones(campo); track opcion.valor) {
+                    <label class="opcion-multiple">
+                      <input
+                        type="checkbox"
+                        [checked]="estaSeleccionado(campo.clave, opcion.valor)"
+                        (change)="alternarOpcion(campo.clave, opcion.valor, $event)"
+                      />
+                      <span>{{ opcion.etiqueta }}</span>
+                    </label>
+                  }
+                </div>
               }
             }
             @default {
               <input
                 type="text"
+                [attr.aria-label]="campo.etiqueta"
                 [ngModel]="valorModelo(campo.clave)"
                 (ngModelChange)="actualizarCampo(campo.clave, $event)"
               />
             }
           }
-        </label>
+        </div>
       }
     </div>
 
@@ -131,6 +169,39 @@
 
   @if (cargando()) {
     <p class="vacio">Cargando…</p>
+  } @else if (entidad() === 'propietario' && agruparPropietarios()) {
+    @if (gruposPropietarios().length === 0) {
+      <p class="vacio">No hay propietarios cargados.</p>
+    } @else {
+      <div class="grupos">
+        @for (grupo of gruposPropietarios(); track grupo.clave) {
+          <article class="grupo-lote">
+            <header class="grupo-lote__cabecera">
+              <strong>{{ grupo.etiquetaLote }}</strong>
+              <span>
+                {{ grupo.propietarios.length }}
+                {{ grupo.propietarios.length === 1 ? 'propietario' : 'propietarios' }}
+              </span>
+            </header>
+            <ul class="grupo-lote__lista">
+              @for (item of grupo.propietarios; track item.id) {
+                <li>
+                  <span class="grupo-lote__nombre">{{ etiquetaPropietario(item) }}</span>
+                  <span class="acciones">
+                    <button type="button" class="boton boton--suave" (click)="editar(item)">
+                      Editar
+                    </button>
+                    <button type="button" class="boton boton--peligro" (click)="eliminar(item)">
+                      Borrar
+                    </button>
+                  </span>
+                </li>
+              }
+            </ul>
+          </article>
+        }
+      </div>
+    }
   } @else if (items().length === 0) {
     <p class="vacio">No hay {{ config().plural.toLowerCase() }} cargados.</p>
   } @else {
