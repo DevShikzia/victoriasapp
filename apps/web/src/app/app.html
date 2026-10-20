@@ -1,5 +1,10 @@
 <header class="barra">
-  <a class="marca" routerLink="/buscar">Victorias · El Pare</a>
+  <a class="marca" routerLink="/buscar">
+    <span class="marca__app">Victorias</span>
+    @if (barrioNombre(); as barrio) {
+      <span class="marca__barrio">{{ barrio }}</span>
+    }
+  </a>
 
   <span class="estado" [class.estado--offline]="!enLinea()">
     @if (enLinea()) {
@@ -16,6 +21,7 @@
   @if (autenticado()) {
     <nav class="nav nav--escritorio" aria-label="Secciones">
       <a routerLink="/buscar" routerLinkActive="activo">Buscar</a>
+      <a routerLink="/propietarios" routerLinkActive="activo">Propietarios</a>
       <a routerLink="/visitas" routerLinkActive="activo">Visitas</a>
       <a routerLink="/visita/nueva" routerLinkActive="activo">Nueva</a>
       <a routerLink="/panel" routerLinkActive="activo">Panel</a>
@@ -32,6 +38,9 @@
       <button type="button" class="btn-sync" (click)="sincronizar()" [disabled]="sincronizando()">
         {{ sincronizando() ? 'Sincronizando…' : 'Sincronizar' }}
       </button>
+      @if (barrioNombre(); as barrio) {
+        <span class="barrio-chip">{{ barrio }}</span>
+      }
       <span class="quien">{{ usuario()?.nombre }} · {{ usuario()?.rol }}</span>
       <button type="button" class="btn-salir" (click)="salir()">Salir</button>
     </span>
@@ -115,7 +124,7 @@
       <span class="tab__texto">Nueva</span>
     </a>
 
-    <a routerLink="/panel" routerLinkActive="activo" class="tab" (click)="cerrarMenu()">
+    <a routerLink="/propietarios" routerLinkActive="activo" class="tab" (click)="cerrarMenu()">
       <svg
         class="tab__icono"
         viewBox="0 0 24 24"
@@ -126,12 +135,12 @@
         stroke-linejoin="round"
         aria-hidden="true"
       >
-        <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
-        <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
-        <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
-        <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3.5 19c.6-3 2.7-4.5 5.5-4.5s4.9 1.5 5.5 4.5" />
+        <circle cx="17" cy="9" r="2.2" />
+        <path d="M16 14.6c2.2.1 3.8 1.4 4.3 4.4" />
       </svg>
-      <span class="tab__texto">Panel</span>
+      <span class="tab__texto">Propietarios</span>
     </a>
 
     <button
@@ -155,6 +164,14 @@
     <div class="menu-velo" (click)="cerrarMenu()"></div>
 
     <div class="menu-mas" role="menu" aria-label="Más opciones">
+      @if (barrioNombre(); as barrio) {
+        <p class="menu-mas__barrio">Barrio: {{ barrio }}</p>
+      }
+
+      <a routerLink="/panel" class="menu-mas__item" role="menuitem" (click)="cerrarMenu()">
+        Panel en vivo
+      </a>
+
       <a routerLink="/captura" class="menu-mas__item" role="menuitem" (click)="cerrarMenu()">
         Modo captura
       </a>

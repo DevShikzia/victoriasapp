@@ -70,7 +70,15 @@ describe('SincronizadorService', () => {
       data: {
         accessToken: 'token-de-prueba',
         expiraEn: Date.now() + 900_000,
-        usuario: { id: '1', usuario: 'admin', nombre: 'Admin', rol: 'admin', garitaId: null },
+        usuario: {
+          id: '1',
+          usuario: 'admin',
+          nombre: 'Admin',
+          rol: 'admin',
+          garitaId: null,
+          barrioId: 'b1',
+          barrioNombre: 'El Pare',
+        },
       },
     });
     await promesa;

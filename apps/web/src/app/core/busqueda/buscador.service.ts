@@ -1,9 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import type {
-  FamiliarLocal,
-  LoteLocal,
-  PropietarioLocal,
-  VehiculoLocal,
+import {
+  etiquetaTratamiento,
+  type FamiliarLocal,
+  type LoteLocal,
+  type PropietarioLocal,
+  type VehiculoLocal,
 } from '@victoriasapp/shared';
 
 import { DatosService } from '../db/datos.service';
@@ -66,6 +67,7 @@ export class BuscadorService {
       titulo: nombre,
       subtitulo: lote === null ? null : `Lote ${lote}`,
       filas: this.filas([
+        ['Tratamiento', etiquetaTratamiento(propietario.tratamiento)],
         ['Teléfono', propietario.telefono],
         ['Email', propietario.email],
         ['Lote', propietario.loteNumero],

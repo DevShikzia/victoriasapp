@@ -20,7 +20,7 @@ teléfono.
 
 ## Objetivo de UX
 
-1. Al entrar (después del login) el guardia cae en **Buscar**.
+1. Al entrar (después del login y de elegir barrio) el guardia cae en **Buscar**.
 2. Escribe y, sin apretar nada, a los ~200 ms ve resultados agrupados:
    **Personas**, **Familiares**, **Vehículos** y **Lotes**.
 3. Cada resultado muestra el contexto que importa: *a qué lote pertenece*, quién
@@ -50,6 +50,7 @@ falta tocar la API**:
 interface PropietarioLocal {
   readonly nombre: string;
   readonly apellido: string;
+  readonly tratamiento: 'senor' | 'senora' | null;
   readonly telefono: string | null;
   readonly loteNumero: string | null;
   // …
@@ -96,13 +97,27 @@ tolera tildes, mayúsculas, prefijos, subsecuencias y errores de Levenshtein.
 - Resultados agrupados con íconos y contexto; el término buscado se resalta.
 - Estado vacío con ejemplos tocables; estado sin resultados.
 - **Ficha** como *bottom sheet* en móvil y panel lateral en escritorio.
-  Es informativa: no navega ni registra visitas (decisión de producto).
+  Es informativa: no navega ni registra visitas (decisión de producto). El
+  componente se extrajo a `features/ficha-directorio/` para reutilizarlo en el
+  listado de propietarios.
+
+### Pantalla `/propietarios` (Fase 6)
+
+- Acceso directo desde la barra inferior; no reemplaza al buscador global.
+- Lista **todos** los propietarios del barrio cacheado, sin pedir red.
+- Buscador por nombre/apellido o número de lote, con el mismo criterio difuso.
+- Selector de orden: **Por lote** (numérico, por defecto) o **Alfabético**
+  (apellido + nombre).
+- Dentro de cada lote: señor antes que señora; un único titular queda solo.
+- Tocar una fila abre `FichaDirectorio` con familiares y vehículos.
+- La lista se refresca sola cuando el sincronizador aplica un pull nuevo
+  (`DatosService.directorioVersion`).
 
 ## Navegación mobile-first
 
 - **Bottom bar** (sólo móvil, `max-width: 767px`):
-  `Buscar · Visitas · Nueva · Panel · Más`.
-- **Más** abre una hoja con `Captura`, `Directorio` (admin/supervisor),
+  `Buscar · Propietarios · Nueva · Visitas · Más`.
+- **Más** abre una hoja con `Panel`, `Captura`, `Directorio` (admin/supervisor),
   `Usuarios` (admin), `Sincronizar` y `Salir`.
 - En escritorio (`≥ 768px`) se mantiene la barra superior con todos los enlaces.
 - Altura táctil mínima de 44 px y `env(safe-area-inset-bottom)` para iPhones.
@@ -139,6 +154,7 @@ Breakpoints:
 | 3 | Tokens y estilos base | ✅ |
 | 4 | Rediseño de login, visitas, nueva visita y captura | ✅ |
 | 5 | Rediseño de panel, directorio y usuarios (tablas → cards) | ✅ |
+| 6 | Barrio activo, tratamiento de propietarios y listado rápido `/propietarios` | ✅ |
 
 ## Pruebas
 
@@ -147,6 +163,9 @@ Breakpoints:
 - `resaltado.spec.ts`: segmentos con tildes, mayúsculas, varios términos y sin
   coincidencia.
 - `buscar.spec.ts`: render del input, búsqueda con debounce y apertura de ficha.
+- `propietarios.spec.ts`: orden por lote/alfabético, búsqueda y render del listado.
+- `core/busqueda/propietarios.spec.ts`: comparación numérica de lotes, desempate por
+  tratamiento y búsqueda combinada.
 - Se mantiene el resto de la suite (web, api y shared) en verde.
 
 ## Fuera de alcance

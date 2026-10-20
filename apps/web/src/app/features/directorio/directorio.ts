@@ -9,6 +9,8 @@ import {
 import { FormsModule } from '@angular/forms';
 import {
   ENTIDADES_DIRECTORIO,
+  etiquetaTratamiento,
+  normalizarTratamiento,
   type EntidadDirectorio,
   type ResultadoImportacion,
 } from '@victoriasapp/shared';
@@ -79,7 +81,8 @@ export class Directorio implements OnInit {
   private readonly api = inject(DirectorioAdminService);
   private readonly sincro = inject(SincronizadorService);
 
-  protected readonly entidades = ENTIDADES_DIRECTORIO;
+  /** El barrio ya no se edita acá: se elige al iniciar sesión. */
+  protected readonly entidades = ENTIDADES_DIRECTORIO.filter((entidad) => entidad !== 'barrio');
   protected readonly entidad = signal<EntidadDirectorio>('propietario');
   protected readonly consulta = signal('');
 
@@ -97,7 +100,6 @@ export class Directorio implements OnInit {
   protected readonly modelo = signal<ModeloFormulario>({});
   protected readonly editandoId = signal<string | null>(null);
 
-  protected readonly barrioImport = signal('El Pare');
   protected readonly csv = signal('');
   protected readonly resultadoImport = signal<ResultadoImportacion | null>(null);
 
@@ -162,6 +164,11 @@ export class Directorio implements OnInit {
       return valor === null || valor === undefined
         ? '—'
         : this.etiquetaReferencia(columna.fuente, texto(valor));
+    }
+    if (columna.clave === 'tratamiento') {
+      return (
+        etiquetaTratamiento(normalizarTratamiento(typeof valor === 'string' ? valor : null)) ?? '—'
+      );
     }
     if (typeof valor === 'boolean') {
       return valor ? 'Sí' : 'No';
@@ -312,7 +319,7 @@ export class Directorio implements OnInit {
     this.resultadoImport.set(null);
     this.importando.set(true);
     try {
-      const resultado = await this.api.importarCsv(this.barrioImport(), this.csv());
+      const resultado = await this.api.importarCsv(this.csv());
       this.resultadoImport.set(resultado);
       this.mensaje.set(
         `Importación: ${String(resultado.creados)} creados, ${String(resultado.actualizados)} actualizados.`,

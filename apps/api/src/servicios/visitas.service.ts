@@ -27,6 +27,7 @@ export function aVisitaDto(doc: VisitaDoc): VisitaDto {
     entradaEn: doc.entradaEn.toISOString(),
     salidaEn: doc.salidaEn === null ? null : doc.salidaEn.toISOString(),
     creadoOffline: doc.creadoOffline,
+    barrioId: doc.barrioId === null ? null : doc.barrioId.toString(),
     syncRev: doc.syncRev,
     actualizadoEn: doc.updatedAt.toISOString(),
   };
@@ -70,12 +71,21 @@ export async function aplicarSyncVisitas(
   const duplicados: string[] = [];
   const errores: { uuid: string; mensaje: string }[] = [];
   const guardiaId = Types.ObjectId.isValid(usuario.id) ? new Types.ObjectId(usuario.id) : null;
+  const barrioId =
+    usuario.barrioId !== null && Types.ObjectId.isValid(usuario.barrioId)
+      ? new Types.ObjectId(usuario.barrioId)
+      : null;
 
   for (const entrada of visitas) {
     try {
       const existente = await VisitaModel.findOne({ uuid: entrada.uuid });
       if (existente === null) {
-        const nuevo = new VisitaModel({ uuid: entrada.uuid, guardiaId, syncRev: 1 });
+        const nuevo = new VisitaModel({
+          uuid: entrada.uuid,
+          guardiaId,
+          barrioId,
+          syncRev: 1,
+        });
         asignarCampos(nuevo, entrada);
         await nuevo.save();
         aplicados.push(entrada.uuid);
@@ -86,6 +96,9 @@ export async function aplicarSyncVisitas(
       const entrante = new Date(entrada.actualizadoEn).getTime();
       if (entrante > existente.updatedAt.getTime()) {
         asignarCampos(existente, entrada);
+        if (existente.barrioId === null && barrioId !== null) {
+          existente.barrioId = barrioId;
+        }
         existente.syncRev += 1;
         await existente.save();
         aplicados.push(entrada.uuid);

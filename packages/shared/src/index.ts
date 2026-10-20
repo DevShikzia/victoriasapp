@@ -11,6 +11,7 @@ export * from './types/directorio.js';
 export * from './types/tiempo-real.js';
 export * from './directorio/csv.js';
 export * from './directorio/nombre.js';
+export * from './directorio/tratamiento.js';
 export * from './directorio/busqueda.js';
 export * from './dni/normalizar.js';
 export * from './dni/mrz.js';

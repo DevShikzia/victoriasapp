@@ -19,6 +19,8 @@ export interface DatosAccess {
   readonly nombre: string;
   readonly rol: RolUsuario;
   readonly garitaId: string | null;
+  readonly barrioId: string | null;
+  readonly barrioNombre: string | null;
 }
 
 export interface PayloadAccess extends DatosAccess {
@@ -51,6 +53,8 @@ export function firmarAccess(
       nombre: datos.nombre,
       rol: datos.rol,
       garitaId: datos.garitaId,
+      barrioId: datos.barrioId,
+      barrioNombre: datos.barrioNombre,
       tipo: 'access',
     },
     config.accessSecret,
@@ -93,13 +97,19 @@ export function verificarAccess(config: ConfigTokens, token: string): PayloadAcc
   const nombre = registro?.nombre;
   const rol = registro?.rol;
   const garitaId = registro?.garitaId;
+  const barrioId = registro?.barrioId;
+  const barrioNombre = registro?.barrioNombre;
+  // Los tokens emitidos antes de esta versión no traen barrio: se aceptan como
+  // `null` hasta que el cliente renueve la sesión.
   if (
     registro?.tipo !== 'access' ||
     typeof sub !== 'string' ||
     typeof usuario !== 'string' ||
     typeof nombre !== 'string' ||
     typeof rol !== 'string' ||
-    !(garitaId === null || typeof garitaId === 'string')
+    !(garitaId === null || typeof garitaId === 'string') ||
+    !(barrioId === undefined || barrioId === null || typeof barrioId === 'string') ||
+    !(barrioNombre === undefined || barrioNombre === null || typeof barrioNombre === 'string')
   ) {
     throw errorNoAutorizado('Token inválido');
   }
@@ -110,6 +120,8 @@ export function verificarAccess(config: ConfigTokens, token: string): PayloadAcc
     nombre,
     rol: rol as PayloadAccess['rol'],
     garitaId,
+    barrioId: barrioId ?? null,
+    barrioNombre: barrioNombre ?? null,
   };
 }
 

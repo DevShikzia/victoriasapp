@@ -1,0 +1,145 @@
+<section class="propietarios">
+  <header class="propietarios__cabecera">
+    <div>
+      <p class="propietarios__eyebrow">Directorio del barrio</p>
+      <h1>Propietarios</h1>
+    </div>
+    <span class="propietarios__total">{{ resumen() }}</span>
+  </header>
+
+  <div class="buscador" role="search">
+    <svg
+      class="buscador__icono"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="M16 16l4.5 4.5" />
+    </svg>
+
+    <input
+      class="buscador__campo"
+      type="search"
+      name="consulta"
+      placeholder="Buscar por nombre o lote"
+      autocomplete="off"
+      autocapitalize="none"
+      spellcheck="false"
+      [ngModel]="consulta()"
+      (ngModelChange)="consulta.set($event)"
+    />
+
+    @if (consulta() !== '') {
+      <button
+        type="button"
+        class="buscador__limpiar"
+        aria-label="Limpiar búsqueda"
+        (click)="limpiarConsulta()"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    }
+  </div>
+
+  <div class="orden" role="group" aria-label="Ordenar propietarios">
+    <button
+      type="button"
+      class="orden__opcion"
+      [class.orden__opcion--activa]="criterio() === 'lote'"
+      [attr.aria-pressed]="criterio() === 'lote'"
+      (click)="ordenarPor('lote')"
+    >
+      Por lote
+    </button>
+    <button
+      type="button"
+      class="orden__opcion"
+      [class.orden__opcion--activa]="criterio() === 'alfabetico'"
+      [attr.aria-pressed]="criterio() === 'alfabetico'"
+      (click)="ordenarPor('alfabetico')"
+    >
+      Alfabético (A–Z)
+    </button>
+  </div>
+
+  @if (cargando()) {
+    <p class="propietarios__estado">Cargando propietarios…</p>
+  } @else if (resultados().length === 0) {
+    <div class="propietarios__vacio">
+      @if (consulta().trim() !== '') {
+        <p class="propietarios__vacio-titulo">Sin resultados para «{{ consulta().trim() }}»</p>
+        <p class="propietarios__vacio-texto">
+          Probá con el apellido, el nombre o el número de lote.
+        </p>
+      } @else {
+        <p class="propietarios__vacio-titulo">Todavía no hay propietarios cargados</p>
+        <p class="propietarios__vacio-texto">
+          Sincronizá el directorio desde la barra superior para verlos acá.
+        </p>
+      }
+    </div>
+  } @else {
+    <ul class="lista">
+      @for (propietario of resultados(); track propietario.uuid) {
+        <li class="lista__item">
+          <button type="button" class="propietario" (click)="abrir(propietario)">
+            <span class="propietario__lote" aria-hidden="true">
+              {{ propietario.loteNumero ?? '—' }}
+            </span>
+
+            <span class="propietario__cuerpo">
+              <span class="propietario__nombre">
+                {{ propietario.apellido }}, {{ propietario.nombre }}
+              </span>
+
+              <span class="propietario__meta">
+                @if (etiqueta(propietario.tratamiento); as tratamiento) {
+                  <span
+                    class="tratamiento"
+                    [class.tratamiento--senora]="propietario.tratamiento === 'senora'"
+                  >
+                    {{ tratamiento }}
+                  </span>
+                }
+                @if (propietario.loteNumero !== null) {
+                  <span>Lote {{ propietario.loteNumero }}</span>
+                }
+                @if (propietario.telefono !== null) {
+                  <span>{{ propietario.telefono }}</span>
+                }
+              </span>
+            </span>
+
+            <svg
+              class="propietario__flecha"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+<app-ficha-directorio [detalle]="detalle()" (cerrar)="cerrarDetalle()" />

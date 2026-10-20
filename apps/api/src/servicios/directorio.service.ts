@@ -17,6 +17,8 @@ import type {
 import { dividirNombreCompleto, parsearCsvDirectorio } from '@victoriasapp/shared';
 import type { HydratedDocument, Types } from 'mongoose';
 
+import { errorNoEncontrado } from '../lib/errores.js';
+
 import {
   BarrioModel,
   EliminadoModel,
@@ -77,6 +79,7 @@ export function aPropietarioDto(doc: PropietarioDoc): PropietarioDto {
     loteId: idONull(doc.loteId),
     nombre: doc.nombre,
     apellido: doc.apellido,
+    tratamiento: doc.tratamiento,
     telefono: doc.telefono,
     email: doc.email,
     descripcion: doc.descripcion,
@@ -124,18 +127,40 @@ function nombreCompleto(doc: PropietarioDoc): string {
 }
 
 /**
- * Devuelve lo cambiado desde `desde` (o todo si es `null`), ya "aplanado" a las
- * proyecciones locales que cachea el PWA, con los nombres resueltos para poder
- * buscar sin conexión.
+ * Devuelve lo cambiado desde `desde` (o todo si es `null`) **del barrio activo**,
+ * ya "aplanado" a las proyecciones locales que cachea el PWA, con los nombres
+ * resueltos para poder buscar sin conexión.
+ *
+ * El barrio se resuelve por pertenencia: un propietario entra si está asignado
+ * al barrio o si su lote pertenece al barrio; familiares y vehículos entran por
+ * cualquiera de sus referencias. Así también se recuperan datos viejos que
+ * todavía no tenían `barrioId` propio.
  */
-export async function pullDirectorio(desde: Date | null): Promise<DirectorioPull> {
+export async function pullDirectorio(
+  desde: Date | null,
+  barrioId: Types.ObjectId,
+): Promise<DirectorioPull> {
   const ahora = new Date();
 
-  const [lotes, propietarios, familiares, vehiculos, eliminados] = await Promise.all([
-    LoteModel.find(),
-    PropietarioModel.find(),
-    FamiliarModel.find(),
-    VehiculoModel.find(),
+  const lotes = await LoteModel.find({ barrioId });
+  const loteIds = lotes.map((doc) => doc._id);
+  const propietarios = await PropietarioModel.find({
+    $or: [{ barrioId }, { loteId: { $in: loteIds } }],
+  });
+  const propietarioIds = propietarios.map((doc) => doc._id);
+  const familiares = await FamiliarModel.find({
+    $or: [{ loteId: { $in: loteIds } }, { propietarioId: { $in: propietarioIds } }],
+  });
+  const familiarIds = familiares.map((doc) => doc._id);
+
+  const [vehiculos, eliminados] = await Promise.all([
+    VehiculoModel.find({
+      $or: [
+        { loteId: { $in: loteIds } },
+        { propietarioId: { $in: propietarioIds } },
+        { familiarId: { $in: familiarIds } },
+      ],
+    }),
     EliminadoModel.find(),
   ]);
 
@@ -188,6 +213,7 @@ export async function pullDirectorio(desde: Date | null): Promise<DirectorioPull
       uuid: doc.uuid,
       nombre: doc.nombre,
       apellido: doc.apellido,
+      tratamiento: doc.tratamiento,
       telefono: doc.telefono,
       email: doc.email,
       descripcion: doc.descripcion,
@@ -262,15 +288,6 @@ export async function pullDirectorio(desde: Date | null): Promise<DirectorioPull
 // ---------------------------------------------------------------------------
 // Importador CSV
 // ---------------------------------------------------------------------------
-
-async function asegurarBarrio(nombre: string): Promise<BarrioDoc> {
-  const doc = await BarrioModel.findOneAndUpdate(
-    { nombre },
-    { $setOnInsert: { uuid: randomUUID(), nombre, activo: true } },
-    { new: true, upsert: true },
-  );
-  return doc;
-}
 
 async function asegurarLote(barrioId: Types.ObjectId, numero: string): Promise<LoteDoc> {
   const existente = await LoteModel.findOne({ barrioId, numero });
@@ -357,12 +374,15 @@ async function asegurarFamiliar(
  * `creados`/`actualizados` cuentan propietarios nuevos vs. ya existentes.
  */
 export async function importarDirectorio(
-  barrioNombre: string,
+  barrioId: Types.ObjectId,
   csv: string,
 ): Promise<ResultadoImportacion> {
   const { filas, errores } = parsearCsvDirectorio(csv);
   const erroresAcumulados = [...errores];
-  const barrio = await asegurarBarrio(barrioNombre);
+  const barrio = await BarrioModel.findById(barrioId);
+  if (barrio === null) {
+    throw errorNoEncontrado('Barrio no encontrado');
+  }
 
   let creados = 0;
   let actualizados = 0;
@@ -391,6 +411,7 @@ export async function importarDirectorio(
           loteId: lote._id,
           nombre,
           apellido,
+          tratamiento: fila.tratamiento,
           telefono: fila.telefono,
           email: null,
           descripcion: fila.descripcion,
@@ -401,6 +422,9 @@ export async function importarDirectorio(
         propietario = existente;
         if (propietario.loteId?.toString() !== lote._id.toString()) {
           propietario.loteId = lote._id;
+        }
+        if (fila.tratamiento !== null) {
+          propietario.tratamiento = fila.tratamiento;
         }
         if (fila.telefono !== null) {
           propietario.telefono = fila.telefono;

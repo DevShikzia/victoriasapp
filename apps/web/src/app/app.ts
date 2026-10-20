@@ -31,6 +31,7 @@ export class App implements OnInit, OnDestroy {
   protected readonly pendientes = this.datos.pendientes;
   protected readonly usuario = this.sesion.usuario;
   protected readonly autenticado = this.sesion.autenticado;
+  protected readonly barrioNombre = this.sesion.barrioNombre;
   protected readonly sincronizando = this.sincro.sincronizando;
   protected readonly puedeAdministrar = computed(() => {
     const rol = this.sesion.usuario()?.rol;
@@ -57,9 +58,14 @@ export class App implements OnInit, OnDestroy {
   private async iniciar(): Promise<void> {
     await this.sesion.inicializar();
     await this.datos.refrescar();
-    if (this.sesion.autenticado()) {
-      await this.sincro.sincronizar();
+    if (!this.sesion.autenticado()) {
+      return;
     }
+    if (this.sesion.barrioId() === null) {
+      await this.router.navigate(['/barrio']);
+      return;
+    }
+    await this.sincro.sincronizar();
   }
 
   ngOnDestroy(): void {

@@ -4,6 +4,7 @@ import { Router } from 'express';
 import { crearAutenticar, usuarioDe } from '../auth/middleware.js';
 import { configTokens } from '../auth/tokens.js';
 import type { Env } from '../config/env.js';
+import { errorBarrioRequerido } from '../lib/errores.js';
 import { asincrono, respuestaOk, validar } from '../lib/http.js';
 import { aplicarSyncVisitas } from '../servicios/visitas.service.js';
 
@@ -19,6 +20,9 @@ export function crearRutasSync(env: Env): Router {
     '/',
     asincrono(async (req, res) => {
       const usuario = usuarioDe(req);
+      if (usuario.barrioId === null) {
+        throw errorBarrioRequerido();
+      }
       const solicitud = validar(esquemaSincronizacion, req.body);
       const resultado = await aplicarSyncVisitas(solicitud.visitas, usuario);
       respuestaOk(res, resultado);

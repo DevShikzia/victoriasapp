@@ -41,6 +41,8 @@ export class DatosService {
   readonly abiertas = signal(0);
   /** `true` cuando ya se leyó la base local al menos una vez. */
   readonly listo = signal(false);
+  /** Sube cada vez que cambia el directorio cacheado (sirve para refrescar listas). */
+  readonly directorioVersion = signal(0);
 
   async refrescar(): Promise<void> {
     const visitas = await this.db.visitas.orderBy('entradaEn').reverse().toArray();
@@ -194,6 +196,11 @@ export class DatosService {
     }
     const lotes = await this.db.lotes.toArray();
     return ordenarPorCoincidencia(lotes, q, (l) => [l.numero, l.calle, l.propietarioNombre]);
+  }
+
+  /** Todos los propietarios cacheados (para el listado rápido del menú). */
+  async listarPropietarios(): Promise<readonly PropietarioLocal[]> {
+    return await this.db.propietarios.toArray();
   }
 
   /** Busca propietarios por apellido, nombre, nombre completo o lote. Difusa. */
@@ -400,6 +407,7 @@ export class DatosService {
         await this.db.meta.put({ clave: META_ULTIMA_SYNC_DIRECTORIO, valor: pull.desde });
       },
     );
+    this.directorioVersion.update((version) => version + 1);
   }
 
   private async borrarEntidadLocal(entidad: EntidadDirectorio, uuid: string): Promise<void> {
@@ -438,6 +446,7 @@ export class DatosService {
         await this.db.vehiculos.bulkPut([...datos.vehiculos]);
       },
     );
+    this.directorioVersion.update((version) => version + 1);
   }
 
   /** Borra todo (visitas, outbox y directorio). Útil en desarrollo. */
@@ -447,6 +456,7 @@ export class DatosService {
         await tabla.clear();
       }
     });
+    this.directorioVersion.update((version) => version + 1);
     await this.refrescar();
   }
 }

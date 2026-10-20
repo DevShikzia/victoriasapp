@@ -57,7 +57,38 @@ export interface UsuarioPublico {
   readonly nombre: string;
   readonly rol: RolUsuario;
   readonly garitaId: string | null;
+  /** Barrio activo de la cuenta; `null` hasta que se elige en el primer ingreso. */
+  readonly barrioId: string | null;
+  readonly barrioNombre: string | null;
 }
+
+/**
+ * Cuerpo de `PUT /api/auth/barrio`.
+ *
+ * Se envía **o** `barrioId` (elegir uno existente) **o** `nombre` (crearlo), no
+ * ambos. Sólo se acepta mientras la cuenta no tenga barrio asignado.
+ */
+export const esquemaElegirBarrio = z
+  .object({
+    barrioId: z.string().trim().min(1).nullable().optional(),
+    nombre: z
+      .string()
+      .trim()
+      .min(1, 'El nombre del barrio es obligatorio')
+      .max(120)
+      .nullable()
+      .optional(),
+    direccion: z.string().trim().max(200).nullable().optional(),
+  })
+  .refine(
+    (datos) => {
+      const tieneId = datos.barrioId !== undefined && datos.barrioId !== null;
+      const tieneNombre = datos.nombre !== undefined && datos.nombre !== null;
+      return tieneId !== tieneNombre;
+    },
+    { message: 'Indicá un barrio existente o un nombre para crearlo (no ambos)' },
+  );
+export type ElegirBarrio = z.infer<typeof esquemaElegirBarrio>;
 
 /** Usuario en el listado de administración (`/api/users`): agrega si está activo. */
 export interface UsuarioAdmin extends UsuarioPublico {

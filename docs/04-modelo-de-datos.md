@@ -22,6 +22,7 @@ Todas las colecciones usan TypeScript estricto (sin `any`). Los esquemas Mongoos
 | `passwordHash` | string | bcrypt / argon2id |
 | `rol` | enum | `admin` \| `supervisor` \| `guardia` |
 | `garitaId` | ObjectId \| null | Puesto asignado |
+| `barrioId` | ObjectId \| null | Barrio activo; se elige una sola vez al primer ingreso |
 | `activo` | boolean | |
 | `ultimoAcceso` | Date \| null | |
 | `refreshTokenHash` | string \| null | Para revocar sesiones |
@@ -63,12 +64,16 @@ Todas las colecciones usan TypeScript estricto (sin `any`). Los esquemas Mongoos
 | `loteId` | ObjectId \| null | Ref `lotes` |
 | `nombre` | string | Nombre completo |
 | `apellido` | string | Para búsqueda |
+| `tratamiento` | enum \| null | `senor` \| `senora`; define el orden dentro del lote |
 | `telefono` | string \| null | |
 | `email` | string \| null | |
 | `descripcion` | string \| null | Notas libres |
 | `activo` | boolean | |
 
 Índices: texto sobre `nombre`, `apellido`; `loteId`.
+
+> En un mismo lote, el **señor** se muestra antes que la **señora**; si hay un solo titular, se
+> muestra solo. `tratamiento` es nullable por datos históricos.
 
 ### `familiares` — Familia (hijos, etc.)
 

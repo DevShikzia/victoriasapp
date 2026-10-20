@@ -1,6 +1,7 @@
 /** Códigos de error de la API (ver docs/05-api-rest.md). */
 export const CODIGOS_ERROR = [
   'VALIDATION_ERROR',
+  'BARRIO_REQUERIDO',
   'UNAUTHORIZED',
   'FORBIDDEN',
   'NOT_FOUND',
@@ -38,6 +39,14 @@ export class ErrorHttp extends Error {
 
 export function errorValidacion(mensaje: string, detalles?: readonly DetalleError[]): ErrorHttp {
   return new ErrorHttp(400, 'VALIDATION_ERROR', mensaje, detalles);
+}
+
+/**
+ * La cuenta todavía no eligió barrio (o el access token es anterior a esa
+ * elección). El cliente lo usa para mandar a la pantalla de selección.
+ */
+export function errorBarrioRequerido(): ErrorHttp {
+  return new ErrorHttp(400, 'BARRIO_REQUERIDO', 'Elegí el barrio en el que vas a trabajar');
 }
 
 export function errorNoAutorizado(mensaje = 'No autenticado'): ErrorHttp {

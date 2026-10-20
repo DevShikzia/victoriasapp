@@ -110,12 +110,15 @@ export class DirectorioAdminService {
     );
   }
 
-  /** Importa un CSV completo (crea barrio, lotes, propietarios, familiares y vehículos). */
-  async importarCsv(barrio: string, csv: string): Promise<ResultadoImportacion> {
+  /**
+   * Importa un CSV completo en el barrio activo de la cuenta (lotes,
+   * propietarios, familiares y vehículos).
+   */
+  async importarCsv(csv: string): Promise<ResultadoImportacion> {
     const respuesta = await firstValueFrom(
       this.http.post<RespuestaApi<ResultadoImportacion>>(
         `${CONFIG.apiBaseUrl}/api/directorio/importar`,
-        { barrio, csv },
+        { csv },
       ),
     );
     return respuesta.data;

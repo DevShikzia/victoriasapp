@@ -14,6 +14,8 @@ export interface CampoEntidad {
   readonly requerido?: boolean;
   /** Para `seleccion`: de qué entidad salen las opciones. */
   readonly fuente?: EntidadDirectorio;
+  /** Para `seleccion` con valores fijos (por ejemplo, el tratamiento). */
+  readonly opciones?: readonly { readonly valor: string; readonly etiqueta: string }[];
 }
 
 /** Columna del listado. */
@@ -80,6 +82,7 @@ export const CONFIG_ENTIDADES: Readonly<Record<EntidadDirectorio, ConfigEntidad>
     columnas: [
       { clave: 'apellido', etiqueta: 'Apellido' },
       { clave: 'nombre', etiqueta: 'Nombre' },
+      { clave: 'tratamiento', etiqueta: 'Tratamiento' },
       { clave: 'loteId', etiqueta: 'Lote', fuente: 'lote' },
       { clave: 'telefono', etiqueta: 'Teléfono' },
       { clave: 'activo', etiqueta: 'Activo' },
@@ -87,6 +90,15 @@ export const CONFIG_ENTIDADES: Readonly<Record<EntidadDirectorio, ConfigEntidad>
     campos: [
       { clave: 'apellido', etiqueta: 'Apellido', tipo: 'texto', requerido: true },
       { clave: 'nombre', etiqueta: 'Nombre', tipo: 'texto', requerido: true },
+      {
+        clave: 'tratamiento',
+        etiqueta: 'Tratamiento',
+        tipo: 'seleccion',
+        opciones: [
+          { valor: 'senor', etiqueta: 'Señor' },
+          { valor: 'senora', etiqueta: 'Señora' },
+        ],
+      },
       { clave: 'loteId', etiqueta: 'Lote', tipo: 'seleccion', fuente: 'lote' },
       { clave: 'telefono', etiqueta: 'Teléfono', tipo: 'texto' },
       { clave: 'email', etiqueta: 'Email', tipo: 'texto' },

@@ -104,7 +104,7 @@ el problema real (el escaneo) cuanto antes.
 - [x] Ficha informativa por resultado (bottom sheet en celular, panel lateral en escritorio) con
       propietarios, familiares y vehículos relacionados.
 - [x] `Buscar` como pantalla de inicio (`''` y `**` redirigen a `/buscar`).
-- [x] Navegación mobile-first: bottom bar (Buscar · Visitas · Nueva · Panel · Más) y menú “Más”.
+- [x] Navegación mobile-first: bottom bar (Buscar · Propietarios · Nueva · Visitas · Más) y menú “Más”.
 - [x] Sistema de diseño con tokens y clases base en `styles.scss`.
 - [x] Rediseño de login, visitas, nueva visita, captura, panel, directorio y usuarios.
 - [x] Tablas → tarjetas en celular (`data-label`) en panel, directorio y usuarios.
@@ -115,7 +115,20 @@ el problema real (el escaneo) cuanto antes.
 > **Estado:** implementado. Ver
 > [`15-buscador-global-y-rediseno-mobile.md`](./15-buscador-global-y-rediseno-mobile.md).
 
-## Fase 6 — Pulido
+## Fase 6 — Barrio activo, tratamiento y listado de propietarios
+
+- [x] Barrio activo por cuenta: onboarding `/barrio` (elegir uno existente o crear el primero),
+      bloqueado después de la primera elección y embebido en el access token.
+- [x] Directorio, visitas, sincronización y panel acotados al barrio activo.
+- [x] Tratamiento **señor/señora** en propietarios (API, ABM, CSV e IndexedDB).
+- [x] Listado rápido `/propietarios` en la barra inferior, con búsqueda por nombre/lote y orden por
+      lote o alfabético; dentro del lote, señor antes que señora.
+- [x] Ficha reutilizable `FichaDirectorio` compartida por `/buscar` y `/propietarios`.
+- [x] Limpieza de la caché del directorio al cambiar de barrio y sesión local única.
+
+**Entregable:** cada cuenta trabaja siempre en su barrio y encuentra a sus propietarios en segundos.
+
+## Fase 7 — Pulido
 
 - [ ] OCR de MRZ como respaldo (Tesseract.js).
 - [ ] Pruebas de campo con guardias.

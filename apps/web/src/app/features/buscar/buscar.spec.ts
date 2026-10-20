@@ -85,7 +85,7 @@ describe('Buscar (buscador global)', () => {
     fixture.detectChanges();
 
     const texto = (fixture.nativeElement as HTMLElement).textContent;
-    expect(texto).toContain('Volver a la búsqueda');
+    expect(texto).toContain('Volver');
     expect(texto).toContain('GOMEZ');
   });
 });

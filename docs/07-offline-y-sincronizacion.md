@@ -112,9 +112,14 @@ La parte local está en el PWA:
 - `apps/web/src/app/features/visita/` — formulario de nueva visita + escáner de DNI incrustado.
 - `apps/web/src/app/features/visitas/` — listado con estado de sync y marcado de salida.
 - `apps/web/src/app/core/sync/sincronizador.service.ts` — sube el `outbox` (`POST /api/sync`) **y**
-  baja el directorio (`GET /api/directorio?desde=`) usando `meta`/`directorio.ultimaSync`.
+  baja el directorio (`GET /api/directorio?desde=`) usando `meta`/`directorio.ultimaSync`. Ambas
+  operaciones exigen **barrio activo** y sólo traen datos de ese barrio.
+- Al cambiar de cuenta o de barrio, `SesionService` borra lotes, propietarios, familiares, vehículos
+  y el `desde` de la última sync. Las visitas locales quedan para no perder registros offline.
 - `apps/web/src/app/core/tiempo-real/tiempo-real.service.ts` + `features/panel/` — panel en vivo
-  por Socket.IO.
+  por Socket.IO; descarta eventos de visitas de otros barrios.
+- `core/busqueda/propietarios.ts` + `features/propietarios/` — listado offline de propietarios con
+  búsqueda y orden por lote/alfabético.
 
 La **subida del outbox** y el **pull incremental del directorio** ya están (Fases 3 y 4). Pendiente:
 la **edición offline del directorio** (hoy el ABM es online, admin/supervisor) y el pull de visitas

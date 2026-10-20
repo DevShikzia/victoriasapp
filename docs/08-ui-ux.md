@@ -18,16 +18,17 @@ la pantalla chica y después se aprovecha el ancho en escritorio. Ver
 
 | Contexto | Navegación |
 | --- | --- |
-| Celular (`< 768px`) | **Bottom bar** fija: `Buscar · Visitas · Nueva · Panel · Más`. |
+| Celular (`< 768px`) | **Bottom bar** fija: `Buscar · Propietarios · Nueva · Visitas · Más`. |
 | Escritorio (`≥ 768px`) | Barra superior con todos los enlaces + sesión. |
 
-- **Buscar** es la pantalla de inicio (después del login).
+- **Buscar** es la pantalla de inicio (después de elegir barrio).
+- **Propietarios** es el listado rápido con búsqueda y orden por lote/alfabético.
 - **Nueva** es la acción principal y se destaca con un botón circular.
-- **Más** abre una hoja con `Captura`, `Directorio` (admin/supervisor), `Usuarios` (admin),
-  `Sincronizar` y `Salir`.
-- La barra superior muestra la marca, el estado de conexión y el botón de sincronizar (con un punto
-  cuando hay pendientes). En escritorio suma el usuario y el rol.
-- En `/login` no se muestra ninguna navegación.
+- **Más** abre una hoja con `Panel`, `Captura`, `Directorio` (admin/supervisor), `Usuarios` (admin),
+  `Sincronizar`, el barrio activo y `Salir`.
+- La barra superior muestra la marca, el barrio activo, el estado de conexión y el botón de
+  sincronizar (con un punto cuando hay pendientes). En escritorio suma el usuario y el rol.
+- En `/login` no se muestra navegación. En `/barrio` (primer ingreso) se elige el barrio una sola vez.
 
 ## Sistema de diseño
 
@@ -115,8 +116,9 @@ En las pantallas de administración las **tablas se convierten en tarjetas** en 
 
 ### 7. Administración
 
-- **Directorio** (`/directorio`, admin/supervisor): pestañas por entidad, buscador, alta/edición/
-  borrado online e importación CSV (archivo o pegado).
+- **Directorio** (`/directorio`, admin/supervisor): pestañas por entidad (sin barrios), buscador,
+  alta/edición/borrado online, tratamiento de propietarios e importación CSV en el barrio activo
+  (archivo o pegado).
 - **Usuarios** (`/usuarios`, admin): listado con estado activo/inactivo, alta, edición, baja lógica y
   reactivación.
 

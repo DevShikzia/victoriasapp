@@ -8,6 +8,7 @@ import { configTokens } from '../auth/tokens.js';
 import type { Env } from '../config/env.js';
 import { errorConflicto, errorNoEncontrado } from '../lib/errores.js';
 import { asincrono, paramId, respuestaOk, validar } from '../lib/http.js';
+import { BarrioModel } from '../models/directorio.modelos.js';
 import { UsuarioModel } from '../models/usuario.model.js';
 import { aUsuarioAdmin } from '../servicios/usuarios.service.js';
 import { requerirRol } from '../auth/middleware.js';
@@ -23,10 +24,18 @@ export function crearRutasUsuarios(env: Env): Router {
     ...soloAdmin,
     asincrono(async (_req, res) => {
       const docs = await UsuarioModel.find().sort({ usuario: 1 });
+      const idsBarrios = docs.flatMap((doc) => (doc.barrioId === null ? [] : [doc.barrioId]));
+      const barrios = await BarrioModel.find({ _id: { $in: idsBarrios } }).select('nombre');
+      const nombres = new Map(barrios.map((barrio) => [barrio._id.toString(), barrio.nombre]));
       // (aUsuarioAdmin incluye `activo`; la API los lista todos, activos e inactivos.)
       respuestaOk(
         res,
-        docs.map((doc) => aUsuarioAdmin(doc)),
+        docs.map((doc) =>
+          aUsuarioAdmin(
+            doc,
+            doc.barrioId === null ? null : (nombres.get(doc.barrioId.toString()) ?? null),
+          ),
+        ),
       );
     }),
   );
@@ -82,7 +91,9 @@ export function crearRutasUsuarios(env: Env): Router {
         doc.refreshTokenHash = null;
       }
       await doc.save();
-      respuestaOk(res, aUsuarioAdmin(doc));
+      const barrio =
+        doc.barrioId === null ? null : await BarrioModel.findById(doc.barrioId).select('nombre');
+      respuestaOk(res, aUsuarioAdmin(doc, barrio?.nombre ?? null));
     }),
   );
 

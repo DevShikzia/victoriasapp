@@ -67,6 +67,10 @@ describe('parseDni', () => {
   `lote`, `dni`, `patente`) y marcar salida.
 - Directorio: búsquedas por nombre/lote/patente, **importación CSV** (idempotente), **pull
   incremental** (proyecciones locales), bajas (tombstone) y RBAC (403 para `guardia` al escribir).
+- Barrio activo: el admin elige `El Pare` en `beforeAll`; `GET /api/auth/barrios` lo lista,
+  `PUT /api/auth/barrio` con otro barrio devuelve 409 y sin sesión 401. El pull, el ABM y las
+  visitas quedan acotados a ese barrio. La importación usa `{ csv }` sin nombre de barrio y asigna
+  el tratamiento `señor`/`señora`.
 - Usuarios: RBAC (`admin` crea, `guardia` recibe 403), listado con `activo`, **baja lógica**
   (`DELETE`) y **reactivación** (`PATCH { activo: true }`).
 
@@ -82,6 +86,10 @@ describe('parseDni', () => {
 - ABM de usuarios (`UsuariosAdminService`): listado, alta (`POST`), edición (`PATCH`) y baja lógica
   (`DELETE`).
 - Pantalla de directorio (`/directorio`): renderiza el encabezado, las pestañas y las listas.
+- Pantalla de propietarios (`/propietarios`): orden por lote, búsqueda por apellido y cambio a orden
+  alfabético.
+- Helpers de propietarios: comparación numérica de lotes, desempate señor/señora y búsqueda
+  combinada por nombre y lote.
 - Pantalla de usuarios (`/usuarios`): renderiza el encabezado y carga el listado.
 - Guard de rutas por rol.
 - Búsqueda difusa (`DatosService`): lotes, propietarios y vehículos en la caché local (sin tildes,

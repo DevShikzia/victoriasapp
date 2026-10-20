@@ -20,6 +20,9 @@ Modelo de dos tokens:
 | **Refresh** | 7–30 días | Cookie `httpOnly`, `Secure`, `SameSite=Strict` | Renovar el access token. |
 
 - El refresh token se guarda **hasheado** en el servidor (`refreshTokenHash`) para poder revocarlo.
+- El access token incluye `barrioId` y `barrioNombre`; el backend usa ese dato para acotar
+  directorio, visitas, sincronización y tiempo real. Un token anterior a la elección de barrio se
+  rechaza con `BARRIO_REQUERIDO` y el cliente va a `/barrio`.
 - `logout` invalida el refresh token.
 - Rotación de refresh token en cada renovación (detecta reutilización).
 - La cookie de refresh se limita a `Path=/api/auth` (no viaja en el resto de las llamadas).
@@ -31,9 +34,14 @@ Modelo de dos tokens:
 Como la app es offline-first, el guardia inicia sesión **una vez con red**. Después:
 
 - La app sigue operando offline con el último access token y una **sesión local cacheada**.
+- La sesión guardada incluye el **barrio activo**. Se conserva una sola sesión recordada (la última
+  cuenta que ingresó) para no restaurar una cuenta vieja al abrir el PWA.
 - Al volver la red, se renueva el token y se sincroniza.
 - Los registros creados offline se asocian al usuario de la sesión local.
 - Un access token vencido **no borra** los registros pendientes: quedan en el outbox.
+- Si la cuenta cambia de barrio, el cliente **borra el directorio cacheado** (lotes, propietarios,
+  familiares, vehículos y el `desde` de la última sync) antes de bajar el nuevo. Las visitas locales
+  pendientes se conservan.
 
 ## Autorización (RBAC)
 

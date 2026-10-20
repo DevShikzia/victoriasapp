@@ -129,6 +129,7 @@ export interface VisitaDto {
   readonly entradaEn: string;
   readonly salidaEn: string | null;
   readonly creadoOffline: boolean;
+  readonly barrioId: string | null;
   readonly syncRev: number;
   readonly actualizadoEn: string;
 }

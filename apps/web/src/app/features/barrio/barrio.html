@@ -1,0 +1,110 @@
+<section class="barrio-pantalla">
+  <div class="barrio-tarjeta">
+    <div class="barrio-tarjeta__icono" aria-hidden="true">EP</div>
+
+    <header class="barrio-tarjeta__presentacion">
+      <h1>¿En qué barrio vas a trabajar?</h1>
+      <p class="ayuda">Se elige una sola vez. Después, la app siempre va a usar este barrio.</p>
+    </header>
+
+    @if (sinConexion()) {
+      <p class="aviso">Necesitás conexión para elegir el barrio la primera vez.</p>
+    }
+
+    @if (cargando()) {
+      <p class="barrio-cargando">Buscando barrios…</p>
+    } @else {
+      @if (barrios().length > 0) {
+        <div class="barrio-lista" role="radiogroup" aria-label="Barrios disponibles">
+          @for (barrio of barrios(); track barrio.id) {
+            <button
+              type="button"
+              class="barrio-opcion"
+              [class.barrio-opcion--activa]="seleccionado()?.id === barrio.id"
+              role="radio"
+              [attr.aria-checked]="seleccionado()?.id === barrio.id"
+              [disabled]="ocupado()"
+              (click)="seleccionar(barrio)"
+            >
+              <span class="barrio-opcion__texto">
+                <span class="barrio-opcion__nombre">{{ barrio.nombre }}</span>
+                @if (barrio.direccion; as direccion) {
+                  <span class="barrio-opcion__dir">{{ direccion }}</span>
+                }
+              </span>
+
+              @if (seleccionado()?.id === barrio.id) {
+                <svg
+                  class="barrio-opcion__check"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12.5l4.5 4.5L19 7.5" />
+                </svg>
+              }
+            </button>
+          }
+        </div>
+
+        <button
+          type="button"
+          class="boton boton--acento boton--bloque"
+          [disabled]="!puedeConfirmar"
+          (click)="confirmar()"
+        >
+          {{ ocupado() ? 'Preparando el barrio…' : 'Confirmar y empezar' }}
+        </button>
+      } @else {
+        <p class="barrio-vacio">
+          Todavía no hay barrios cargados. Creá el primero para empezar a trabajar.
+        </p>
+      }
+
+      <div class="barrio-separador"><span>o creá uno nuevo</span></div>
+
+      <form class="barrio-form" (ngSubmit)="crear()">
+        <label class="campo">
+          <span>Nombre del barrio</span>
+          <input
+            name="nombre"
+            type="text"
+            autocomplete="organization"
+            maxlength="120"
+            required
+            [(ngModel)]="nombre"
+            [disabled]="ocupado()"
+          />
+        </label>
+
+        <label class="campo">
+          <span>Dirección (opcional)</span>
+          <input
+            name="direccion"
+            type="text"
+            autocomplete="street-address"
+            maxlength="200"
+            [(ngModel)]="direccion"
+            [disabled]="ocupado()"
+          />
+        </label>
+
+        <button type="submit" class="boton boton--bloque" [disabled]="!puedeCrear">
+          {{ ocupado() ? 'Guardando…' : 'Crear y empezar' }}
+        </button>
+      </form>
+    }
+
+    @if (error(); as mensaje) {
+      <p class="error" role="alert">{{ mensaje }}</p>
+    }
+
+    <p class="barrio-nota">
+      El barrio queda fijado para esta cuenta. Si necesitás cambiarlo, contactá al administrador.
+    </p>
+  </div>
+</section>

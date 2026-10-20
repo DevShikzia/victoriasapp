@@ -72,8 +72,14 @@
                 (ngModelChange)="actualizarCampo(campo.clave, $event)"
               >
                 <option value="">—</option>
-                @for (opcion of opciones(campo); track opcion.id) {
-                  <option [value]="opcion.id">{{ etiquetaOpcionDe(campo, opcion) }}</option>
+                @if (campo.opciones; as opcionesFijas) {
+                  @for (opcion of opcionesFijas; track opcion.valor) {
+                    <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+                  }
+                } @else {
+                  @for (opcion of opciones(campo); track opcion.id) {
+                    <option [value]="opcion.id">{{ etiquetaOpcionDe(campo, opcion) }}</option>
+                  }
                 }
               </select>
             }
@@ -142,14 +148,11 @@
   <details class="importar">
     <summary>Importar CSV del barrio</summary>
     <p class="ayuda">
-      Columnas: <code>lote,propietario,telefono,patente,familiar,parentesco,descripcion</code>. La
-      cabecera es opcional.
+      Columnas:
+      <code>lote,propietario,telefono,patente,familiar,parentesco,descripcion,tratamiento</code>. La
+      última es opcional (<code>señor</code> o <code>señora</code>) y la cabecera también.
     </p>
     <div class="campos">
-      <label class="campo">
-        <span class="etiqueta">Barrio</span>
-        <input type="text" [ngModel]="barrioImport()" (ngModelChange)="barrioImport.set($event)" />
-      </label>
       <label class="campo">
         <span class="etiqueta">Archivo CSV</span>
         <input type="file" accept=".csv,text/csv" (change)="alElegirArchivo($event)" />
@@ -160,7 +163,7 @@
           rows="6"
           [ngModel]="csv()"
           (ngModelChange)="csv.set($event)"
-          placeholder="lote,propietario,telefono,patente,familiar,parentesco,descripcion"
+          placeholder="lote,propietario,telefono,patente,familiar,parentesco,descripcion,tratamiento"
         ></textarea>
       </label>
     </div>

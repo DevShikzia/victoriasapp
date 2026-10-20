@@ -3,7 +3,6 @@ import {
   Component,
   DestroyRef,
   type ElementRef,
-  HostListener,
   afterNextRender,
   computed,
   inject,
@@ -24,8 +23,8 @@ import {
   type DetalleFicha,
   type ResultadoBusqueda,
   type ResultadosGlobales,
-  type TipoResultado,
 } from '../../core/busqueda/tipos';
+import { FichaDirectorio } from '../ficha-directorio/ficha-directorio';
 
 const DEMORA_BUSQUEDA_MS = 200;
 
@@ -36,6 +35,7 @@ const DEMORA_BUSQUEDA_MS = 200;
  */
 @Component({
   selector: 'app-buscar',
+  imports: [FichaDirectorio],
   templateUrl: './buscar.html',
   styleUrl: './buscar.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -106,36 +106,10 @@ export class Buscar {
     this.detalle.set(null);
   }
 
-  @HostListener('document:keydown.escape')
-  cerrarConEscape(): void {
-    if (this.detalle() !== null) {
-      this.cerrarDetalle();
-    }
-  }
-
-  protected etiquetaTipo(tipo: TipoResultado): string {
-    switch (tipo) {
-      case 'propietario':
-        return 'Propietario';
-      case 'familiar':
-        return 'Familiar';
-      case 'vehiculo':
-        return 'Vehículo';
-      case 'lote':
-        return 'Lote';
-    }
-  }
-
   protected descripcionVehiculo(vehiculo: VehiculoLocal): string {
     return [vehiculo.marca, vehiculo.modelo, vehiculo.color]
       .filter((parte): parte is string => parte !== null && parte !== '')
       .join(' ');
-  }
-
-  protected descripcionFamiliar(familiar: FamiliarLocal): string {
-    return [familiar.parentesco, familiar.propietarioNombre]
-      .filter((parte): parte is string => parte !== null && parte !== '')
-      .join(' · ');
   }
 
   private programar(valor: string): void {

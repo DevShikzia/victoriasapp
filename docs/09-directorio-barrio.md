@@ -18,9 +18,23 @@ Un **lote** tiene uno o más **propietarios** (por ejemplo, "Juan Pérez" y "Ana
 propietario puede tener **vehículos** y **familiares**, y cada familiar puede tener sus propios
 **vehículos**.
 
+## Barrio activo
+
+Cada cuenta elige **un barrio** la primera vez que ingresa (pantalla `/barrio`): puede seleccionar uno
+existente o crear el primero. La elección queda fijada en `Usuario.barrioId` y viaja en el access
+token; a partir de ahí:
+
+- El directorio, las visitas, la sincronización y el panel se **acotan a ese barrio**.
+- El ABM de barrios sólo muestra/edita el barrio activo; no se pueden crear barrios desde ahí.
+- Si una cuenta cambia de barrio (otra persona usa el mismo celular), el PWA borra el directorio
+  cacheado y vuelve a bajarlo. Las visitas locales pendientes se conservan.
+- La API responde `BARRIO_REQUERIDO` si el token todavía no tiene barrio; el cliente redirige a
+  `/barrio`.
+
 ## Campos
 
-- **Propietario:** nombre, apellido, teléfono, email, descripción libre.
+- **Propietario:** nombre, apellido, **tratamiento** (`señor` / `señora`), teléfono, email,
+  descripción libre.
 - **Familiar:** nombre, parentesco, descripción.
 - **Vehículo:** patente, marca, modelo, color, descripción, a quién pertenece (propietario o familiar).
 - **Lote:** número, calle, notas.
@@ -52,6 +66,19 @@ aparecen ~200 ms después de dejar de escribir.
   relacionados. Es sólo informativa: no navega ni registra visitas.
 - Ejemplos: `ricardo` devuelve todas las personas con ese nombre y su lote; `34` devuelve patentes
   que lo contienen y el lote `34`; `alamos` encuentra la calle “Los Álamos”.
+
+### Listado rápido de propietarios (`/propietarios`)
+
+El menú principal agrega un acceso directo a **Propietarios** (barra inferior: `Buscar ·
+Propietarios · Nueva · Visitas · Más`). La pantalla:
+
+- Lista los propietarios del barrio activo desde IndexedDB (funciona sin conexión).
+- Busca por **nombre/apellido** o **número de lote**.
+- Ordena por **lote** (por defecto, comparación numérica) o **alfabético** (apellido y nombre).
+- Dentro de un mismo lote: primero **señor**, después **señora**; si hay un solo titular, queda solo.
+- Al tocar una fila abre la misma ficha reutilizable que el buscador global
+  (`FichaDirectorio`) con familiares y vehículos relacionados.
+- Si la lista está vacía, invita a sincronizar el directorio.
 
 ## Uso durante un ingreso
 
@@ -85,10 +112,12 @@ Si el propietario no existe, el guardia (o el supervisor) puede **cargarlo al vu
 La pantalla de administración (`apps/web/src/app/features/directorio/`) permite el ABM **online**
 contra la API, sólo para `admin`/`supervisor`:
 
-- Pestañas por entidad (barrios, lotes, propietarios, familiares, vehículos) con buscador.
+- Pestañas por entidad (lotes, propietarios, familiares, vehículos) con buscador. **Barrios no tiene
+  pestaña**: se elige al iniciar sesión.
 - Alta, edición y borrado (con confirmación). Los desplegables de referencias (`barrioId`, `loteId`,
-  `propietarioId`, …) salen de las listas cargadas al entrar.
-- Importación de CSV: subiendo un archivo o pegando el contenido.
+  `propietarioId`, …) salen de las listas cargadas al entrar; `barrioId` sólo contiene el barrio
+  activo. El alta/edición de propietarios incluye el **tratamiento** (`Señor` / `Señora`).
+- Importación de CSV: subiendo un archivo o pegando el contenido, siempre en el barrio activo.
 - Después de cada cambio, dispara un sync para bajar el directorio actualizado a IndexedDB.
 
 El módulo `DirectorioAdminService` (`core/directorio/directorio-admin.service.ts`) mapea cada entidad
@@ -97,24 +126,27 @@ a su ruta de la API (`barrio` → `/api/barrios`, etc.) y el PWA valida del lado
 
 ## Importación inicial
 
-Si el barrio ya tiene la lista en Excel/CSV, se provee un **importador** que crea barrio, lotes,
-propietarios, familiares y vehículos. Formato sugerido del CSV:
+Si el barrio ya tiene la lista en Excel/CSV, se provee un **importador** que crea lotes,
+propietarios, familiares y vehículos **en el barrio activo de la cuenta**. Formato sugerido del CSV:
 
 ```csv
-lote,propietario,telefono,patente,familiar,parentesco,descripcion
-42,Juan Perez,11-5555-5555,AB123CD,,
-42,Ana Gomez,11-6666-6666,AC456EF,Maria Perez,hija,
+lote,propietario,telefono,patente,familiar,parentesco,descripcion,tratamiento
+42,Juan Perez,11-5555-5555,AB123CD,,,,señor
+42,Ana Gomez,11-6666-6666,AC456EF,Maria Perez,hija,Casa del fondo,señora
 ```
 
-Columnas vacías se ignoran. Las patentes se normalizan (mayúsculas, sin espacios). El parser
+Columnas vacías se ignoran. La octava columna `tratamiento` es **opcional**; acepta `señor`/`señora`
+(o `senor`/`senora`). Las patentes se normalizan (mayúsculas, sin espacios). El parser
 (`parsearCsvDirectorio` en `@victoriasapp/shared`) acepta `,`, `;` o tabulaciones, campos entre
 comillas y acentos, y lo reutilizan la API y el PWA.
 
 ### Implementación (`POST /api/directorio/importar`, admin/supervisor)
 
-- Recibe `{ barrio, csv }` y devuelve `{ creados, actualizados, lotes, vehiculos, errores }`.
-- Claves naturales: barrio por nombre, lote por barrio+número, propietario por barrio+nombre+apellido,
-  vehículo por patente, familiar por propietario+nombre.
+- Recibe `{ csv }` (sin nombre de barrio: sale del access token) y devuelve
+  `{ creados, actualizados, lotes, vehiculos, errores }`.
+- Claves naturales: lote por barrio+número, propietario por barrio+nombre+apellido, vehículo por
+  patente, familiar por propietario+nombre.
+- Reimportar el mismo CSV actualiza sin duplicar y conserva/actualiza el tratamiento.
 
 ## Sincronización con el PWA
 

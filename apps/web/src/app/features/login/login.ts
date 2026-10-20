@@ -35,7 +35,7 @@ export class Login {
     const credenciales: Credenciales = { usuario: this.usuario.trim(), password: this.password };
     try {
       await this.sesion.login(credenciales);
-      await this.router.navigate(['/visitas']);
+      await this.router.navigate([this.sesion.barrioId() === null ? '/barrio' : '/buscar']);
     } catch (e) {
       this.error.set(mensajeDeError(e));
     } finally {

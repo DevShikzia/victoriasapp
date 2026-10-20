@@ -1,10 +1,10 @@
-import { Router } from 'express';
-import type { FilterQuery } from 'mongoose';
+import { Router, type Request } from 'express';
+import { Types, type FilterQuery } from 'mongoose';
 
-import { crearAutenticar } from '../auth/middleware.js';
+import { crearAutenticar, usuarioDe } from '../auth/middleware.js';
 import { configTokens } from '../auth/tokens.js';
 import type { Env } from '../config/env.js';
-import { errorNoEncontrado } from '../lib/errores.js';
+import { errorBarrioRequerido, errorNoEncontrado } from '../lib/errores.js';
 import { asincrono, paramId, respuestaOk } from '../lib/http.js';
 import type { Visita } from '../models/visita.model.js';
 import { VisitaModel } from '../models/visita.model.js';
@@ -32,6 +32,15 @@ function numeroQuery(valor: unknown, porDefecto: number, maximo: number): number
   return Math.min(numero, maximo);
 }
 
+/** Barrio activo de la cuenta; las visitas de otros barrios no se mezclan. */
+function barrioActual(req: Request): Types.ObjectId {
+  const id = usuarioDe(req).barrioId;
+  if (id === null || !Types.ObjectId.isValid(id)) {
+    throw errorBarrioRequerido();
+  }
+  return new Types.ObjectId(id);
+}
+
 /** Rutas de visitas (`/api/visits`). Requieren autenticación. */
 export function crearRutasVisitas(env: Env): Router {
   const router = Router();
@@ -41,7 +50,7 @@ export function crearRutasVisitas(env: Env): Router {
     '/',
     asincrono(async (req, res) => {
       const q = req.query;
-      const filtro: FilterQuery<Visita> = {};
+      const filtro: FilterQuery<Visita> = { barrioId: barrioActual(req) };
 
       if (textoQuery(q.abiertas) === 'true') {
         filtro.salidaEn = null;
@@ -107,8 +116,10 @@ export function crearRutasVisitas(env: Env): Router {
 
   router.get(
     '/abiertas',
-    asincrono(async (_req, res) => {
-      const visitas = await VisitaModel.find({ salidaEn: null }).sort({ entradaEn: -1 }).limit(500);
+    asincrono(async (req, res) => {
+      const visitas = await VisitaModel.find({ salidaEn: null, barrioId: barrioActual(req) })
+        .sort({ entradaEn: -1 })
+        .limit(500);
       respuestaOk(
         res,
         visitas.map((visita) => aVisitaDto(visita)),
@@ -120,7 +131,7 @@ export function crearRutasVisitas(env: Env): Router {
     '/:id/salida',
     asincrono(async (req, res) => {
       const id = paramId(req);
-      const doc = await VisitaModel.findById(id);
+      const doc = await VisitaModel.findOne({ _id: id, barrioId: barrioActual(req) });
       if (doc === null) {
         throw errorNoEncontrado('Visita no encontrada');
       }

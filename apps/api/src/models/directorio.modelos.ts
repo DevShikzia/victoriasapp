@@ -1,4 +1,8 @@
-import type { EntidadDirectorio } from '@victoriasapp/shared';
+import {
+  TRATAMIENTOS_PROPIETARIO,
+  type EntidadDirectorio,
+  type TratamientoPropietario,
+} from '@victoriasapp/shared';
 import { type Model, Schema, type Types, model } from 'mongoose';
 
 /**
@@ -41,6 +45,7 @@ export interface Propietario {
   loteId: Types.ObjectId | null;
   nombre: string;
   apellido: string;
+  tratamiento: TratamientoPropietario | null;
   telefono: string | null;
   email: string | null;
   descripcion: string | null;
@@ -117,6 +122,7 @@ const propietarioSchema = new Schema<Propietario>(
     loteId: { type: Schema.Types.ObjectId, ref: 'Lote', default: null },
     nombre: { type: String, required: true, trim: true },
     apellido: { type: String, required: true, trim: true },
+    tratamiento: { type: String, enum: [...TRATAMIENTOS_PROPIETARIO], default: null },
     telefono: { type: String, default: null, trim: true },
     email: { type: String, default: null, trim: true },
     descripcion: { type: String, default: null, trim: true },

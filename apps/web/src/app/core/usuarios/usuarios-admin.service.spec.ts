@@ -13,6 +13,8 @@ function usuarioDePrueba(): UsuarioAdmin {
     nombre: 'Ana',
     rol: 'guardia',
     garitaId: null,
+    barrioId: 'b1',
+    barrioNombre: 'El Pare',
     activo: true,
   };
 }

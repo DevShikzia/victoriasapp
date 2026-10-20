@@ -26,6 +26,7 @@ function visitaDePrueba(): VisitaDto {
     entradaEn: '2026-05-01T10:00:00.000Z',
     salidaEn: null,
     creadoOffline: false,
+    barrioId: 'b1',
     syncRev: 1,
     actualizadoEn: '2026-05-01T10:00:00.000Z',
   };

@@ -3,10 +3,11 @@
 Base: `/api`. Todas las respuestas son JSON. Autenticación por **Bearer JWT** (ver
 [seguridad](./06-seguridad.md)).
 
-> **Estado (Fase 4):** implementado autenticación (`/api/auth/*`), RBAC, `/api/sync` idempotente,
+> **Estado (Fase 6):** autenticación (`/api/auth/*`), RBAC, `/api/sync` idempotente,
 > `/api/visits` (`GET`, `GET /abiertas`, `POST /:id/salida`) y `/api/users` (ABM, sólo admin).
-> Sumado en Fase 4: el **directorio** (`/api/directorio` + ABM por entidad, ver más abajo) y el
-> canal de **tiempo real** (Socket.IO, namespace `/realtime`).
+> El **directorio** (`/api/directorio` + ABM por entidad, ver más abajo) y el canal de
+> **tiempo real** (Socket.IO, namespace `/realtime`) están acotados al **barrio activo** de la
+> cuenta.
 
 ## Convenciones
 
@@ -34,7 +35,9 @@ Base: `/api`. Todas las respuestas son JSON. Autenticación por **Bearer JWT** (
 { "usuario": "jperez", "password": "..." }
 ```
 
-Respuesta: `accessToken` (corto, en el body) y `refreshToken` (cookie `httpOnly`).
+Respuesta: `accessToken` (corto, en el body) y `refreshToken` (cookie `httpOnly`). El access token
+lleva el `barrioId` y el `barrioNombre` de la cuenta. Si la cuenta todavía no eligió barrio, ambos son
+`null` y el PWA redirige a `/barrio`.
 
 ### `POST /api/auth/refresh`
 
@@ -46,7 +49,29 @@ Revoca el refresh token actual.
 
 ### `GET /api/auth/me`
 
-Devuelve el usuario autenticado.
+Devuelve el usuario autenticado (incluye `barrioId` y `barrioNombre`).
+
+### `GET /api/auth/barrios`
+
+Lista los barrios activos disponibles para el primer ingreso. Requiere sesión, pero **no** exige
+barrio activo (es la pantalla donde se elige).
+
+### `PUT /api/auth/barrio`
+
+Elige el barrio de la cuenta. Se acepta **una sola vez**; después devuelve `409 CONFLICT`.
+
+```json
+{ "barrioId": "665f..." }
+```
+
+o, para crear uno nuevo:
+
+```json
+{ "nombre": "Los Álamos", "direccion": "Calle 123" }
+```
+
+La respuesta tiene la misma forma que el login; en la primera elección rota el refresh token. Si se
+reintenta con el mismo `barrioId`, la operación es idempotente.
 
 ## Visitas
 
@@ -55,7 +80,9 @@ Devuelve el usuario autenticado.
 Parámetros: `desde`, `hasta`, `lote`, `dni`, `patente`, `abiertas` (boolean),
 `estado` (`dentro` | `fuera`), `q` (texto libre sobre apellido, nombre, DNI, patente, lote y
 propietario; se trata como literal, no como regex) y `limit` (por defecto 200, máximo 500).
-Los resultados se ordenan por `entradaEn` descendente.
+Los resultados se ordenan por `entradaEn` descendente y **sólo incluyen visitas del barrio activo**
+de la cuenta. Lo mismo aplica a `GET /api/visits/abiertas`, `GET /api/visits/:id` y
+`POST /api/visits/:id/salida`.
 
 ### `GET /api/visits/:id`
 
@@ -79,7 +106,9 @@ Lista de visitantes actualmente dentro (sin `salidaEn`).
 
 ### `POST /api/sync`
 
-Recibe un lote de cambios creados offline. Es **idempotente** por `uuid`.
+Recibe un lote de cambios creados offline. Es **idempotente** por `uuid`. Requiere que la cuenta ya
+tenga barrio: las visitas nuevas se guardan con el `barrioId` del access token, no con un valor del
+cuerpo.
 
 ```json
 {
@@ -121,15 +150,19 @@ Reglas:
 ## Directorio
 
 Cada entidad del directorio (`barrio`, `lote`, `propietario`, `familiar`, `vehiculo`) tiene un CRUD
-completo bajo su prefijo. Todas las rutas exigen autenticación; **crear/editar/borrar** requieren rol
-`admin` o `supervisor`. El **borrado es lógico para la sync**: se elimina el documento y se deja una
-"lápida" en la colección `eliminados` para que el pull incremental propague la baja.
+completo bajo su prefijo. Todas las rutas exigen autenticación y un barrio activo; **crear/editar/borrar**
+requieren rol `admin` o `supervisor`. El **borrado es lógico para la sync**: se elimina el documento y
+se deja una "lápida" en la colección `eliminados` para que el pull incremental propague la baja.
+
+Todas las consultas quedan **acotadas al barrio activo** de la cuenta (no se acepta un `barrioId`
+arbitrario para leer o escribir datos de otro barrio). El CRUD de `/api/barrios` sólo muestra y edita el
+barrio activo; para crear uno se usa `PUT /api/auth/barrio`.
 
 | Entidad | Prefijo | Búsqueda (`query`) |
 | --- | --- | --- |
-| Barrio | `/api/barrios` | `q` (nombre) |
-| Lote | `/api/lotes` | `q` (número), `barrioId` |
-| Propietario | `/api/propietarios` | `q` (nombre o apellido), `lote`, `barrioId` |
+| Barrio | `/api/barrios` | `q` (nombre, sólo el activo) |
+| Lote | `/api/lotes` | `q` (número) |
+| Propietario | `/api/propietarios` | `q` (nombre o apellido), `lote` |
 | Familiar | `/api/familiares` | `q` (nombre), `propietarioId` |
 | Vehículo | `/api/vehiculos` | `patente`, `propietarioId` |
 
@@ -139,8 +172,8 @@ En todos: `GET /` (lista), `POST /`, `GET /:id`, `PATCH /:id`, `DELETE /:id`. Pa
 ### `GET /api/directorio?desde=<ISO>`
 
 **Pull incremental** para la caché offline del PWA. Devuelve las **proyecciones locales** (nombres
-desnormalizados, listas para guardar sin join) de todo lo que cambió después de `desde`, más las
-bajas:
+desnormalizados, listas para guardar sin join) de todo lo que cambió después de `desde` **en el barrio
+activo**, más las bajas:
 
 ```json
 {
@@ -162,11 +195,12 @@ bajas:
 
 ### `POST /api/directorio/importar` (admin/supervisor)
 
-Importa un CSV: crea barrio, lotes, propietarios, familiares y vehículos. Ver formato en
+Importa un CSV: crea lotes, propietarios, familiares y vehículos **en el barrio activo** de la cuenta.
+No se acepta un nombre de barrio en el cuerpo; el barrio sale del access token. Ver formato en
 [`09-directorio-barrio.md`](./09-directorio-barrio.md).
 
 ```json
-{ "barrio": "Los Álamos", "csv": "lote,propietario,telefono,patente\n42,Juan Perez,11-5555-5555,AB123CD" }
+{ "csv": "lote,propietario,telefono,patente,tratamiento\n42,Juan Perez,11-5555-5555,AB123CD,señor" }
 ```
 
 ```json
@@ -183,7 +217,7 @@ Listado con filtros de búsqueda (ver tabla). Ejemplos: `GET /api/propietarios?q
 
 ## Usuarios (admin)
 
-Todas las rutas requieren rol `admin`. `UsuarioPublico` = `{ id, usuario, nombre, rol, garitaId }`;
+Todas las rutas requieren rol `admin`. `UsuarioPublico` = `{ id, usuario, nombre, rol, garitaId, barrioId, barrioNombre }`;
 el listado agrega `activo` (`UsuarioAdmin`).
 
 | Método y ruta | Para qué |
@@ -213,14 +247,17 @@ Namespace `/realtime`. El cliente se autentica con el `accessToken` en el handsh
 | `visita:actualizada` | servidor → clientes | `{ visita: VisitaDto }` (incluye el egreso) |
 | `directorio:actualizado` | servidor → clientes | `{ entidad, uuid, operacion: 'crear' \| 'actualizar' \| 'eliminar' }` |
 
-El panel en vivo (`/panel` en el PWA) usa `visita:creada` y `visita:actualizada` para mostrar las
-visitas abiertas de todos los puestos; `directorio:actualizado` sirve para refrescar el directorio.
+El panel en vivo (`/panel` en el PWA, dentro de "Más") usa `visita:creada` y `visita:actualizada`
+para mostrar las visitas abiertas; el cliente **descarta los eventos de otros barrios** comparando
+`visita.barrioId` con el barrio activo. `directorio:actualizado` sirve para refrescar el directorio
+del barrio activo.
 
 ## Códigos de error
 
 | Código | HTTP | Significado |
 | --- | --- | --- |
 | `VALIDATION_ERROR` | 400 | Datos inválidos |
+| `BARRIO_REQUERIDO` | 400 | La cuenta todavía no eligió barrio (el cliente va a `/barrio`) |
 | `UNAUTHORIZED` | 401 | Falta token o es inválido |
 | `FORBIDDEN` | 403 | Sin permisos para la acción |
 | `NOT_FOUND` | 404 | Recurso inexistente |

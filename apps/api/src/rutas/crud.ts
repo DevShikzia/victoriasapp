@@ -24,13 +24,63 @@ export interface ConfigCrud<
   readonly actualizar: A;
   readonly aDto: (doc: HydratedDocument<T>) => unknown;
   /** Arma el documento nuevo (incluye `uuid`). */
-  readonly construir: (datos: output<C>) => Partial<T>;
+  readonly construir: (datos: output<C>, req: Request) => Partial<T> | Promise<Partial<T>>;
   /** Aplica un patch sobre el documento existente. */
-  readonly aplicar: (doc: HydratedDocument<T>, datos: output<A>) => void;
+  readonly aplicar: (
+    doc: HydratedDocument<T>,
+    datos: output<A>,
+    req: Request,
+  ) => void | Promise<void>;
   readonly filtroBusqueda?: (
     req: Request,
   ) => Promise<Record<string, unknown>> | Record<string, unknown>;
+  /**
+   * Condición extra que acota listado, lectura, edición y borrado (por ejemplo,
+   * el barrio activo). Se combina con `filtroBusqueda` mediante `$and`.
+   */
+  readonly alcance?: (req: Request) => Promise<FilterQuery<T>> | FilterQuery<T>;
   readonly orden?: Record<string, 1 | -1>;
+}
+
+/** Combina condiciones no vacías; `{}` si no hay ninguna. */
+function combinarFiltros<T>(condiciones: readonly FilterQuery<T>[]): FilterQuery<T> {
+  const activas = condiciones.filter((condicion) => Object.keys(condicion).length > 0);
+  if (activas.length === 0) {
+    return {};
+  }
+  if (activas.length === 1) {
+    return activas[0] ?? {};
+  }
+  return { $and: activas };
+}
+
+/** Filtro de listado: alcance + búsqueda. */
+async function filtroListado<
+  T extends { uuid: string },
+  C extends ZodTypeAny,
+  A extends ZodTypeAny,
+>(req: Request, config: ConfigCrud<T, C, A>): Promise<FilterQuery<T>> {
+  const condiciones: FilterQuery<T>[] = [];
+  if (config.alcance !== undefined) {
+    condiciones.push(await config.alcance(req));
+  }
+  if (config.filtroBusqueda !== undefined) {
+    condiciones.push(await config.filtroBusqueda(req));
+  }
+  return combinarFiltros(condiciones);
+}
+
+/** Busca un documento por id respetando el alcance configurado. */
+async function buscarPorId<T extends { uuid: string }, C extends ZodTypeAny, A extends ZodTypeAny>(
+  req: Request,
+  id: string,
+  config: ConfigCrud<T, C, A>,
+): Promise<HydratedDocument<T> | null> {
+  const condiciones: FilterQuery<T>[] = [{ _id: id }];
+  if (config.alcance !== undefined) {
+    condiciones.push(await config.alcance(req));
+  }
+  return await config.modelo.findOne(combinarFiltros(condiciones));
 }
 
 function numeroQuery(valor: unknown, porDefecto: number, maximo: number): number {
@@ -63,8 +113,7 @@ export function crearRutasCrud<
     '/',
     autenticar,
     asincrono(async (req, res) => {
-      const filtro: FilterQuery<T> =
-        config.filtroBusqueda === undefined ? {} : await config.filtroBusqueda(req);
+      const filtro = await filtroListado(req, config);
       const pagina = numeroQuery(req.query.page, 1, 1000);
       const limite = numeroQuery(req.query.limit, 200, 500);
       const docs = await config.modelo
@@ -85,7 +134,7 @@ export function crearRutasCrud<
     escribir,
     asincrono(async (req, res) => {
       const datos = validar(config.crear, req.body);
-      const doc = await config.modelo.create(config.construir(datos));
+      const doc = await config.modelo.create(await config.construir(datos, req));
       publicar('directorio:actualizado', {
         entidad: config.entidad,
         uuid: doc.uuid,
@@ -100,7 +149,7 @@ export function crearRutasCrud<
     autenticar,
     asincrono(async (req, res) => {
       const id = paramId(req);
-      const doc = await config.modelo.findById(id);
+      const doc = await buscarPorId(req, id, config);
       if (doc === null) {
         throw errorNoEncontrado(`${config.entidad} no encontrado`);
       }
@@ -115,11 +164,11 @@ export function crearRutasCrud<
     asincrono(async (req, res) => {
       const id = paramId(req);
       const datos = validar(config.actualizar, req.body);
-      const doc = await config.modelo.findById(id);
+      const doc = await buscarPorId(req, id, config);
       if (doc === null) {
         throw errorNoEncontrado(`${config.entidad} no encontrado`);
       }
-      config.aplicar(doc, datos);
+      await config.aplicar(doc, datos, req);
       await doc.save();
       publicar('directorio:actualizado', {
         entidad: config.entidad,
@@ -136,7 +185,7 @@ export function crearRutasCrud<
     escribir,
     asincrono(async (req, res) => {
       const id = paramId(req);
-      const doc = await config.modelo.findById(id);
+      const doc = await buscarPorId(req, id, config);
       if (doc === null) {
         throw errorNoEncontrado(`${config.entidad} no encontrado`);
       }

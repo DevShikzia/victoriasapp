@@ -22,6 +22,7 @@ describe('parsearCsvDirectorio', () => {
       familiar: null,
       parentesco: null,
       descripcion: null,
+      tratamiento: null,
     });
     expect(filas[1]?.familiar).toBe('Maria Perez');
     expect(filas[1]?.parentesco).toBe('hija');
@@ -57,6 +58,18 @@ describe('parsearCsvDirectorio', () => {
   it('normaliza la patente', () => {
     const r = parsearCsvDirectorio('1,Juan,,ab-123 cd,,,\n');
     expect(r.filas[0]?.patente).toBe('AB123CD');
+  });
+
+  it('lee la columna opcional de tratamiento', () => {
+    const r = parsearCsvDirectorio(
+      [
+        'lote,propietario,telefono,patente,familiar,parentesco,descripcion,tratamiento',
+        '1,Juan Perez,,,,,,señor',
+        '2,Ana Gomez,,,,,,Sra',
+      ].join('\n'),
+    );
+    expect(r.filas[0]?.tratamiento).toBe('senor');
+    expect(r.filas[1]?.tratamiento).toBe('senora');
   });
 
   it('reporta filas sin lote o sin propietario', () => {

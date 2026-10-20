@@ -17,12 +17,30 @@
 }
 
 .marca {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
   color: var(--texto-inverso);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.marca__app {
   font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: 0.01em;
-  text-decoration: none;
-  white-space: nowrap;
+}
+
+.marca__barrio {
+  max-width: 10rem;
+  overflow: hidden;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0.82;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
 }
 
 .estado {
@@ -216,10 +234,29 @@
   color: var(--peligro);
 }
 
+.menu-mas__barrio {
+  margin: 0;
+  padding: var(--esp-2) var(--esp-2) var(--esp-1);
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .menu-mas__sesion {
   padding: var(--esp-2) var(--esp-2) 0;
   color: var(--texto-suave);
   font-size: 0.78rem;
+}
+
+.barrio-chip {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid rgb(255 255 255 / 35%);
+  border-radius: var(--radio-pill);
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 @keyframes subir-menu {

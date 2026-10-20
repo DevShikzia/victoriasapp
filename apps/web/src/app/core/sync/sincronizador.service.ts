@@ -28,7 +28,7 @@ export class SincronizadorService {
 
   /** Devuelve `true` si pudo sincronizar (o si no había nada que enviar). */
   async sincronizar(): Promise<boolean> {
-    if (!this.sesion.autenticado() || !navigator.onLine) {
+    if (!this.sesion.autenticado() || this.sesion.barrioId() === null || !navigator.onLine) {
       return false;
     }
     this.sincronizando.set(true);

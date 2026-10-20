@@ -13,6 +13,10 @@
 
 import { z } from 'zod';
 import type { ErrorImportacion } from '../directorio/csv.js';
+import {
+  TRATAMIENTOS_PROPIETARIO,
+  type TratamientoPropietario,
+} from '../directorio/tratamiento.js';
 import { normalizarPatente } from '../dni/normalizar.js';
 import type { RolUsuario } from './dominio.js';
 
@@ -32,6 +36,7 @@ export interface PropietarioLocal {
   readonly uuid: string;
   readonly nombre: string;
   readonly apellido: string;
+  readonly tratamiento: TratamientoPropietario | null;
   readonly telefono: string | null;
   readonly email: string | null;
   readonly descripcion: string | null;
@@ -67,9 +72,14 @@ export interface SesionLocal {
   readonly nombre: string;
   readonly rol: RolUsuario;
   readonly garitaId: string | null;
+  /** Barrio en el que trabaja esta cuenta (se elige al iniciar sesión). */
+  readonly barrioId: string | null;
+  readonly barrioNombre: string | null;
   readonly accessToken: string;
   /** Vencimiento del access token, en ISO. */
   readonly expiraEn: string;
+  /** Momento en que se guardó la sesión (ISO); permite elegir la más reciente. */
+  readonly guardadaEn?: string;
 }
 
 /** Metadatos locales (última sync, versión de esquema). */
@@ -172,6 +182,7 @@ export interface PropietarioDto {
   readonly loteId: string | null;
   readonly nombre: string;
   readonly apellido: string;
+  readonly tratamiento: TratamientoPropietario | null;
   readonly telefono: string | null;
   readonly email: string | null;
   readonly descripcion: string | null;
@@ -185,6 +196,7 @@ export const esquemaCrearPropietario = z.object({
   loteId: idReferencia.default(null),
   nombre: z.string().trim().min(1, 'El nombre es obligatorio').max(120),
   apellido: z.string().trim().min(1, 'El apellido es obligatorio').max(120),
+  tratamiento: z.enum(TRATAMIENTOS_PROPIETARIO).nullable().default(null),
   telefono: textoOpcional(40).default(null),
   email: textoOpcional(160).default(null),
   descripcion: textoOpcional(400).default(null),
@@ -197,6 +209,7 @@ export const esquemaActualizarPropietario = z.object({
   loteId: idReferencia.optional(),
   nombre: z.string().trim().min(1).max(120).optional(),
   apellido: z.string().trim().min(1).max(120).optional(),
+  tratamiento: z.enum(TRATAMIENTOS_PROPIETARIO).nullable().optional(),
   telefono: textoOpcional(40).optional(),
   email: textoOpcional(160).optional(),
   descripcion: textoOpcional(400).optional(),
@@ -304,9 +317,12 @@ export interface DirectorioPull {
   readonly eliminados: readonly EliminadoDirectorio[];
 }
 
-/** Cuerpo de `POST /api/directorio/importar`. */
+/**
+ * Cuerpo de `POST /api/directorio/importar`.
+ *
+ * El barrio ya no viaja en el cuerpo: se toma del barrio activo de la cuenta.
+ */
 export const esquemaImportarDirectorio = z.object({
-  barrio: z.string().trim().min(1).max(120).default('El Pare'),
   csv: z.string().min(1).max(2_000_000),
 });
 export type ImportarDirectorio = z.infer<typeof esquemaImportarDirectorio>;

@@ -25,6 +25,7 @@ function propietarioDePrueba(): PropietarioDto {
     loteId: 'l1',
     nombre: 'Ana',
     apellido: 'Perez',
+    tratamiento: 'senora',
     telefono: null,
     email: null,
     descripcion: null,
@@ -102,13 +103,13 @@ describe('DirectorioAdminService', () => {
     await promesa;
   });
 
-  it('importa un CSV del barrio', async () => {
-    const promesa = api.importarCsv('El Pare', 'lote,propietario\n1,PEREZ');
+  it('importa un CSV en el barrio activo', async () => {
+    const promesa = api.importarCsv('lote,propietario\n1,PEREZ');
     const peticion = http.expectOne(`${CONFIG.apiBaseUrl}/api/directorio/importar`);
     expect(peticion.request.method).toBe('POST');
-    const cuerpo = peticion.request.body as { barrio: string; csv: string };
-    expect(cuerpo.barrio).toBe('El Pare');
+    const cuerpo = peticion.request.body as { csv: string };
     expect(cuerpo.csv).toContain('PEREZ');
+    expect('barrio' in cuerpo).toBe(false);
 
     const resultado: ResultadoImportacion = {
       barrio: 'El Pare',

@@ -62,10 +62,14 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
       (debounce de 200 ms, grupos Personas/Familiares/Vehículos/Lotes y resaltado), ficha informativa
       por resultado, bottom bar + menú “Más”, tokens de diseño y rediseño de las 7 pantallas + login.
       En el celular las tablas del panel, directorio y usuarios se leen como tarjetas.
-- [x] Tests: parser + esquemas + CSV/nombre + búsqueda difusa (`shared`, 49), integración de la API
-      con Mongo en memoria (`api`, 26) y flujo offline/sync + pull del directorio + ABM del
-      directorio + histórico + búsqueda difusa + ABM de usuarios + buscador global en el PWA
-      (`web`, 38).
+- [x] **Fase 6 — barrio activo y propietarios:** onboarding `/barrio` (elegir o crear, bloqueado
+      después), scoping de directorio/visitas/sync/panel por barrio, tratamiento señor/señora,
+      listado rápido `/propietarios` con búsqueda y orden por lote/alfabético, ficha reutilizable
+      y limpieza de caché al cambiar de barrio.
+- [x] Tests: parser + esquemas + CSV/nombre + búsqueda difusa + tratamiento (`shared`, 50),
+      integración de la API con Mongo en memoria (`api`, 30) y flujo offline/sync + pull del
+      directorio + ABM del directorio + histórico + búsqueda difusa + ABM de usuarios + buscador
+      global + listado de propietarios (`web`).
 
 ---
 

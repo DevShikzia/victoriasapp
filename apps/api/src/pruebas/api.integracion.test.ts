@@ -24,13 +24,19 @@ const CLAVE_ADMIN = 'admin12345';
 interface CuerpoLogin {
   readonly data: {
     readonly accessToken: string;
-    readonly usuario: { readonly usuario: string; readonly rol: string };
+    readonly usuario: {
+      readonly usuario: string;
+      readonly rol: string;
+      readonly barrioId: string | null;
+      readonly barrioNombre: string | null;
+    };
   };
 }
 
 let mongo: MongoMemoryServer;
 let env: Env;
 let app: Express;
+let idBarrio = '';
 
 beforeAll(async () => {
   mongo = await MongoMemoryServer.create();
@@ -46,6 +52,17 @@ beforeAll(async () => {
   await conectarMongo(env.MONGODB_URI);
   await asegurarAdminDesdeEnv(env);
   app = crearApp(env);
+
+  // El admin elige su barrio una sola vez; el resto de las pruebas ya trabaja
+  // con el directorio y las visitas acotadas a ese barrio.
+  const token = await tokenAdmin();
+  const eleccion = await request(app)
+    .put('/api/auth/barrio')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ nombre: 'El Pare' })
+    .expect(200);
+  idBarrio = (cuerpoJson(eleccion) as CuerpoLogin).data.usuario.barrioId ?? '';
+  expect(idBarrio).not.toBe('');
 });
 
 afterAll(async () => {
@@ -132,6 +149,32 @@ describe('autenticación', () => {
     const respuesta = await agente.post('/api/auth/refresh').expect(200);
     const cuerpo = cuerpoJson(respuesta) as CuerpoLogin;
     expect(typeof cuerpo.data.accessToken).toBe('string');
+  });
+
+  it('lista los barrios disponibles para el primer ingreso', async () => {
+    const token = await tokenAdmin();
+    const respuesta = await request(app)
+      .get('/api/auth/barrios')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const barrios = (cuerpoJson(respuesta) as CuerpoData<{ id: string; nombre: string }[]>).data;
+    expect(barrios.some((barrio) => barrio.id === idBarrio && barrio.nombre === 'El Pare')).toBe(
+      true,
+    );
+  });
+
+  it('no permite cambiar el barrio una vez elegido', async () => {
+    const token = await tokenAdmin();
+    const respuesta = await request(app)
+      .put('/api/auth/barrio')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ nombre: 'Otro barrio' })
+      .expect(409);
+    expect((cuerpoJson(respuesta) as { ok: boolean }).ok).toBe(false);
+  });
+
+  it('rechaza elegir barrio sin sesión', async () => {
+    await request(app).put('/api/auth/barrio').send({ nombre: 'Sin sesión' }).expect(401);
   });
 });
 
@@ -390,9 +433,9 @@ interface CuerpoData<T> {
 
 describe('directorio', () => {
   const csv = [
-    'lote,propietario,telefono,patente,familiar,parentesco,descripcion',
-    '42,"Perez, Juan",11-5555-5555,AB123CD,,,',
-    '42,"Gomez, Ana",11-6666-6666,AC456EF,Maria Perez,hija,Casa del fondo',
+    'lote,propietario,telefono,patente,familiar,parentesco,descripcion,tratamiento',
+    '42,"Perez, Juan",11-5555-5555,AB123CD,,,,señor',
+    '42,"Gomez, Ana",11-6666-6666,AC456EF,Maria Perez,hija,Casa del fondo,señora',
   ].join('\n');
 
   async function tokenGuardia(): Promise<string> {
@@ -400,15 +443,49 @@ describe('directorio', () => {
       .post('/api/auth/login')
       .send({ usuario: 'guardia1', password: 'clave12345' })
       .expect(200);
-    return (cuerpoJson(login) as CuerpoLogin).data.accessToken;
+    const tokenInicial = (cuerpoJson(login) as CuerpoLogin).data.accessToken;
+    // El guardia también elige el barrio en su primer ingreso. Reintentarlo con
+    // el mismo barrio es idempotente.
+    const eleccion = await request(app)
+      .put('/api/auth/barrio')
+      .set('Authorization', `Bearer ${tokenInicial}`)
+      .send({ barrioId: idBarrio })
+      .expect(200);
+    return (cuerpoJson(eleccion) as CuerpoLogin).data.accessToken;
   }
 
-  it('importa el CSV creando barrio, lote, propietarios, vehículos y familiares', async () => {
+  it('rechaza el directorio si la cuenta todavía no eligió barrio', async () => {
+    const token = await tokenAdmin();
+    await request(app)
+      .post('/api/users')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        usuario: 'sinbarrio',
+        nombre: 'Sin Barrio',
+        password: 'clave12345',
+        rol: 'guardia',
+      })
+      .expect(201);
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ usuario: 'sinbarrio', password: 'clave12345' })
+      .expect(200);
+    const tokenSinBarrio = (cuerpoJson(login) as CuerpoLogin).data.accessToken;
+
+    const respuesta = await request(app)
+      .get('/api/lotes')
+      .set('Authorization', `Bearer ${tokenSinBarrio}`)
+      .expect(400);
+    const cuerpo = cuerpoJson(respuesta) as { error: { code: string } };
+    expect(cuerpo.error.code).toBe('BARRIO_REQUERIDO');
+  });
+
+  it('importa el CSV creando lote, propietarios, vehículos y familiares', async () => {
     const token = await tokenAdmin();
     const respuesta = await request(app)
       .post('/api/directorio/importar')
       .set('Authorization', `Bearer ${token}`)
-      .send({ barrio: 'El Pare', csv })
+      .send({ csv })
       .expect(200);
     const datos = (cuerpoJson(respuesta) as CuerpoData<{ creados: number; errores: unknown[] }>)
       .data;
@@ -421,7 +498,7 @@ describe('directorio', () => {
     const respuesta = await request(app)
       .post('/api/directorio/importar')
       .set('Authorization', `Bearer ${token}`)
-      .send({ barrio: 'El Pare', csv })
+      .send({ csv })
       .expect(200);
     const datos = (cuerpoJson(respuesta) as CuerpoData<{ creados: number; actualizados: number }>)
       .data;
@@ -441,6 +518,12 @@ describe('directorio', () => {
     const lote = datos.lotes.find((l) => l.numero === '42');
     expect(lote?.propietarioNombre).toContain('Juan Perez');
     expect(lote?.propietarioNombre).toContain('Ana Gomez');
+
+    const juan = datos.propietarios.find((p) => p.nombre === 'Juan');
+    const ana = datos.propietarios.find((p) => p.nombre === 'Ana');
+    expect(juan?.tratamiento).toBe('senor');
+    expect(ana?.tratamiento).toBe('senora');
+    expect(ana?.loteNumero).toBe('42');
 
     const vehiculo = datos.vehiculos.find((v) => v.patente === 'AB123CD');
     expect(vehiculo?.loteNumero).toBe('42');
@@ -490,9 +573,21 @@ describe('directorio', () => {
     const creado = await request(app)
       .post('/api/propietarios')
       .set('Authorization', `Bearer ${token}`)
-      .send({ nombre: 'Carlos', apellido: 'Lopez', telefono: '11-7777-7777' })
+      .send({
+        nombre: 'Carlos',
+        apellido: 'Lopez',
+        tratamiento: 'senor',
+        telefono: '11-7777-7777',
+      })
       .expect(201);
-    const creadoData = (cuerpoJson(creado) as CuerpoData<{ id: string; uuid: string }>).data;
+    const creadoData = (
+      cuerpoJson(creado) as CuerpoData<{
+        id: string;
+        uuid: string;
+        tratamiento: string | null;
+      }>
+    ).data;
+    expect(creadoData.tratamiento).toBe('senor');
 
     const busqueda = await request(app)
       .get('/api/propietarios?q=lopez')
@@ -504,7 +599,7 @@ describe('directorio', () => {
     await request(app)
       .patch(`/api/propietarios/${creadoData.id}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ telefono: '11-0000-0000' })
+      .send({ telefono: '11-0000-0000', tratamiento: 'senora' })
       .expect(200);
 
     await request(app)

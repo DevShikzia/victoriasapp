@@ -6,6 +6,7 @@
  */
 
 import { normalizarPatente } from '../dni/normalizar.js';
+import { normalizarTratamiento, type TratamientoPropietario } from './tratamiento.js';
 
 export interface FilaImportacion {
   /** Número de fila en el archivo (1-based, incluyendo la cabecera). */
@@ -17,6 +18,8 @@ export interface FilaImportacion {
   readonly familiar: string | null;
   readonly parentesco: string | null;
   readonly descripcion: string | null;
+  /** Columna opcional 8: `señor`, `señora`, `sr`, `sra`, `M`, `F`, … */
+  readonly tratamiento: TratamientoPropietario | null;
 }
 
 export interface ErrorImportacion {
@@ -38,6 +41,7 @@ export const COLUMNAS_DIRECTORIO = [
   'familiar',
   'parentesco',
   'descripcion',
+  'tratamiento',
 ] as const;
 
 const SEPARADORES = [',', ';', '\t'] as const;
@@ -167,6 +171,7 @@ export function parsearCsvDirectorio(texto: string): ResultadoParseoCsv {
       familiar: aTexto(normalizadas[4]),
       parentesco: aTexto(normalizadas[5]),
       descripcion: aTexto(normalizadas[6]),
+      tratamiento: normalizarTratamiento(normalizadas[7]),
     });
   });
 

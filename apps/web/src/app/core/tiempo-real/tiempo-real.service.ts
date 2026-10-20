@@ -52,7 +52,8 @@ export class TiempoRealService {
       return;
     }
     const token = this.sesion.token();
-    if (token === null) {
+    const barrioId = this.sesion.usuario()?.barrioId;
+    if (token === null || barrioId === null || barrioId === undefined) {
       return;
     }
 
@@ -100,6 +101,10 @@ export class TiempoRealService {
 
   private registrarVisita(carga: unknown): void {
     if (!esCargaVisita(carga)) {
+      return;
+    }
+    const barrioId = this.sesion.usuario()?.barrioId ?? null;
+    if (barrioId !== null && carga.visita.barrioId !== null && carga.visita.barrioId !== barrioId) {
       return;
     }
     const uuid = carga.visita.uuid;

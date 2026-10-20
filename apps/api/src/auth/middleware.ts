@@ -21,6 +21,8 @@ export function crearAutenticar(config: ConfigTokens): RequestHandler {
         nombre: payload.nombre,
         rol: payload.rol,
         garitaId: payload.garitaId,
+        barrioId: payload.barrioId,
+        barrioNombre: payload.barrioNombre,
       };
       next();
     } catch (error) {
