@@ -25,11 +25,12 @@
   height: 56px;
   margin: 0 auto;
   border-radius: 16px;
-  background: var(--acento);
+  background: var(--degradado-marca);
   color: var(--texto-inverso);
-  font-size: 1.05rem;
+  font-size: 1.55rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.04em;
+  box-shadow: 0 10px 24px rgb(67 56 202 / 28%);
 }
 
 .login__presentacion {
@@ -56,7 +57,7 @@ form {
 
 .error {
   padding: var(--esp-2) var(--esp-3);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--peligro-borde);
   border-radius: var(--radio);
   background: var(--peligro-suave);
   color: var(--peligro);

@@ -30,7 +30,7 @@ async function principal(): Promise<void> {
   const httpServer = createServer(app);
   crearServidorTiempoReal(httpServer, env);
   httpServer.listen(env.PORT, () => {
-    console.warn(`API victoriasapp escuchando en http://localhost:${String(env.PORT)}`);
+    console.warn(`API MatiApp escuchando en http://localhost:${String(env.PORT)}`);
   });
 }
 

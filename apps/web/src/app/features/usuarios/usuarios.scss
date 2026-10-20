@@ -22,13 +22,13 @@
   font-size: 0.86rem;
 
   &--ok {
-    border: 1px solid #b9e0c7;
-    background: var(--acento-suave);
-    color: var(--acento);
+    border: 1px solid var(--exito-borde);
+    background: var(--exito-suave);
+    color: var(--exito);
   }
 
   &--error {
-    border: 1px solid #fecaca;
+    border: 1px solid var(--peligro-borde);
     background: var(--peligro-suave);
     color: var(--peligro);
   }
@@ -194,7 +194,7 @@ tr.inactivo td {
   }
 
   .tabla tr.inactivo {
-    border-color: #f0b429;
+    border-color: var(--alerta-borde);
   }
 
   .tabla tr.inactivo td {

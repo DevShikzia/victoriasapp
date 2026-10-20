@@ -41,6 +41,7 @@ import {
   aVehiculoDto,
   importarDirectorio,
   pullDirectorio,
+  recalcularTitularesDeBarrio,
 } from '../servicios/directorio.service.js';
 import { publicar } from '../tiempo-real/bus.js';
 import { crearRutasCrud } from './crud.js';
@@ -131,6 +132,9 @@ async function alcanceVehiculos(req: Request): Promise<FilterQuery<Vehiculo>> {
   return {
     $or: [
       { loteId: { $in: loteIds } },
+      { propietarioIds: { $in: propietarioIds } },
+      { familiarIds: { $in: familiarIds } },
+      // Documentos heredados con una sola referencia.
       { propietarioId: { $in: propietarioIds } },
       { familiarId: { $in: familiarIds } },
     ],
@@ -169,23 +173,94 @@ async function propietarioDelBarrio(
   return doc;
 }
 
-/** Familiar del barrio activo; `null` si no se indicó ninguno. */
-async function familiarDelBarrio(
-  valor: string | null,
+/** Resuelve una lista de propietarios del barrio activo, sin duplicados. */
+async function propietariosDelBarrio(
+  valores: readonly string[],
   req: Request,
-): Promise<HydratedDocument<Familiar> | null> {
-  const id = ref(valor);
-  if (id === null) {
-    return null;
+): Promise<HydratedDocument<Propietario>[]> {
+  if (valores.length === 0) {
+    return [];
   }
-  const doc = await FamiliarModel.findOne({
-    _id: id,
+  const ids: Types.ObjectId[] = [];
+  const vistos = new Set<string>();
+  for (const valor of valores) {
+    const id = ref(valor);
+    if (id !== null && !vistos.has(id.toString())) {
+      vistos.add(id.toString());
+      ids.push(id);
+    }
+  }
+  const encontrados = await PropietarioModel.find({
+    _id: { $in: ids },
+    ...(await alcancePropietarios(req)),
+  });
+  const porId = new Map(encontrados.map((doc) => [doc._id.toString(), doc]));
+  return ids.map((id) => {
+    const doc = porId.get(id.toString());
+    if (doc === undefined) {
+      throw errorValidacion('El propietario no pertenece al barrio activo');
+    }
+    return doc;
+  });
+}
+
+/** Resuelve una lista de familiares del barrio activo, sin duplicados. */
+async function familiaresDelBarrio(
+  valores: readonly string[],
+  req: Request,
+): Promise<HydratedDocument<Familiar>[]> {
+  if (valores.length === 0) {
+    return [];
+  }
+  const ids: Types.ObjectId[] = [];
+  const vistos = new Set<string>();
+  for (const valor of valores) {
+    const id = ref(valor);
+    if (id !== null && !vistos.has(id.toString())) {
+      vistos.add(id.toString());
+      ids.push(id);
+    }
+  }
+  const encontrados = await FamiliarModel.find({
+    _id: { $in: ids },
     ...(await alcanceFamiliares(req)),
   });
-  if (doc === null) {
-    throw errorValidacion('El familiar no pertenece al barrio activo');
+  const porId = new Map(encontrados.map((doc) => [doc._id.toString(), doc]));
+  return ids.map((id) => {
+    const doc = porId.get(id.toString());
+    if (doc === undefined) {
+      throw errorValidacion('El familiar no pertenece al barrio activo');
+    }
+    return doc;
+  });
+}
+
+/** Valida que los usuarios elegidos para un vehículo sean del lote indicado. */
+function validarUsuariosDeLote(
+  loteId: Types.ObjectId | null,
+  propietarios: readonly HydratedDocument<Propietario>[],
+  familiares: readonly HydratedDocument<Familiar>[],
+): void {
+  if (loteId === null) {
+    return;
   }
-  return doc;
+  for (const propietario of propietarios) {
+    if (propietario.loteId?.equals(loteId) !== true) {
+      throw errorValidacion('El propietario seleccionado no pertenece a ese lote');
+    }
+  }
+  for (const familiar of familiares) {
+    if (familiar.loteId !== null && !familiar.loteId.equals(loteId)) {
+      throw errorValidacion('El familiar seleccionado no pertenece a ese lote');
+    }
+  }
+}
+
+/** Recalcula el titular principal del lote del barrio del propietario. */
+async function recalcularBarrioDePropietario(doc: HydratedDocument<Propietario>): Promise<void> {
+  if (doc.barrioId !== null) {
+    await recalcularTitularesDeBarrio(doc.barrioId);
+  }
 }
 
 /** `GET /api/directorio` (pull incremental) y `POST /api/directorio/importar`. */
@@ -303,6 +378,22 @@ export function crearRutasLotes(env: Env): Router {
             : ((await propietarioDelBarrio(d.propietarioId, req))?._id ?? null);
       }
     },
+    despuesDeCrear: async (doc) => {
+      if (doc.propietarioId !== null) {
+        await PropietarioModel.updateOne({ _id: doc.propietarioId }, { $set: { loteId: doc._id } });
+      }
+      if (doc.barrioId !== null) {
+        await recalcularTitularesDeBarrio(doc.barrioId);
+      }
+    },
+    despuesDeActualizar: async (doc) => {
+      if (doc.propietarioId !== null) {
+        await PropietarioModel.updateOne({ _id: doc.propietarioId }, { $set: { loteId: doc._id } });
+      }
+      if (doc.barrioId !== null) {
+        await recalcularTitularesDeBarrio(doc.barrioId);
+      }
+    },
     filtroBusqueda: (req) => {
       const filtro: FilterQuery<Lote> = {};
       const q = textoQuery(req.query.q);
@@ -363,6 +454,9 @@ export function crearRutasPropietarios(env: Env): Router {
         doc.activo = d.activo;
       }
     },
+    despuesDeCrear: recalcularBarrioDePropietario,
+    despuesDeActualizar: recalcularBarrioDePropietario,
+    despuesDeEliminar: recalcularBarrioDePropietario,
     filtroBusqueda: async (req) => {
       const filtro: FilterQuery<Propietario> = {};
       const q = textoQuery(req.query.q);
@@ -457,21 +551,22 @@ export function crearRutasVehiculos(env: Env): Router {
     orden: { patente: 1 },
     alcance: alcanceVehiculos,
     construir: async (d, req) => {
-      const propietario = await propietarioDelBarrio(d.propietarioId, req);
-      const familiar = await familiarDelBarrio(d.familiarId, req);
-      const loteId =
-        d.loteId === null
-          ? (propietario?.loteId ?? familiar?.loteId ?? null)
-          : await loteDelBarrio(d.loteId, req);
+      const loteId = await loteDelBarrio(d.loteId, req);
+      const propietarios = await propietariosDelBarrio(d.propietarioIds, req);
+      const familiares = await familiaresDelBarrio(d.familiarIds, req);
+      validarUsuariosDeLote(loteId, propietarios, familiares);
       return {
         uuid: d.uuid ?? randomUUID(),
         patente: d.patente,
         marca: d.marca,
         modelo: d.modelo,
         color: d.color,
-        propietarioId: propietario?._id ?? null,
-        familiarId: familiar?._id ?? null,
         loteId,
+        propietarioIds: propietarios.map((propietario) => propietario._id),
+        familiarIds: familiares.map((familiar) => familiar._id),
+        // Espejo singular para datos y consumidores viejos.
+        propietarioId: propietarios[0]?._id ?? null,
+        familiarId: familiares[0]?._id ?? null,
         descripcion: d.descripcion,
       };
     },
@@ -488,22 +583,32 @@ export function crearRutasVehiculos(env: Env): Router {
       if (d.color !== undefined) {
         doc.color = d.color;
       }
-      if (d.propietarioId !== undefined) {
-        const propietario = await propietarioDelBarrio(d.propietarioId, req);
-        doc.propietarioId = propietario?._id ?? null;
-        if (d.loteId === undefined && propietario !== null && propietario.loteId !== null) {
-          doc.loteId = propietario.loteId;
-        }
-      }
-      if (d.familiarId !== undefined) {
-        const familiar = await familiarDelBarrio(d.familiarId, req);
-        doc.familiarId = familiar?._id ?? null;
-        if (d.loteId === undefined && familiar !== null && familiar.loteId !== null) {
-          doc.loteId = familiar.loteId;
-        }
-      }
       if (d.loteId !== undefined) {
         doc.loteId = await loteDelBarrio(d.loteId, req);
+        // Si cambia el lote sin reenviar los usuarios, no dejamos referencias
+        // de otro lote colgadas en el vehículo.
+        if (d.propietarioIds === undefined && d.familiarIds === undefined) {
+          doc.propietarioIds = [];
+          doc.familiarIds = [];
+          doc.propietarioId = null;
+          doc.familiarId = null;
+        }
+      }
+
+      const propietarios =
+        d.propietarioIds === undefined ? null : await propietariosDelBarrio(d.propietarioIds, req);
+      const familiares =
+        d.familiarIds === undefined ? null : await familiaresDelBarrio(d.familiarIds, req);
+      if (propietarios !== null || familiares !== null) {
+        validarUsuariosDeLote(doc.loteId, propietarios ?? [], familiares ?? []);
+      }
+      if (propietarios !== null) {
+        doc.propietarioIds = propietarios.map((propietario) => propietario._id);
+        doc.propietarioId = propietarios[0]?._id ?? null;
+      }
+      if (familiares !== null) {
+        doc.familiarIds = familiares.map((familiar) => familiar._id);
+        doc.familiarId = familiares[0]?._id ?? null;
       }
       if (d.descripcion !== undefined) {
         doc.descripcion = d.descripcion;
@@ -513,7 +618,8 @@ export function crearRutasVehiculos(env: Env): Router {
       const filtro: FilterQuery<Vehiculo> = {};
       const propietarioId = textoQuery(req.query.propietarioId);
       if (propietarioId !== null && Types.ObjectId.isValid(propietarioId)) {
-        filtro.propietarioId = new Types.ObjectId(propietarioId);
+        const id = new Types.ObjectId(propietarioId);
+        filtro.$or = [{ propietarioId: id }, { propietarioIds: id }];
       }
       const patente = textoQuery(req.query.patente);
       if (patente !== null) {

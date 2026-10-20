@@ -74,7 +74,7 @@
         <ul>
           @for (v of d.vehiculos; track v.uuid) {
             <li>
-              <strong>{{ v.patente }}</strong>
+              <strong>{{ v.patente ?? 'Vehículo sin patente' }}</strong>
               <small>{{ descripcionVehiculo(v) }}</small>
             </li>
           }

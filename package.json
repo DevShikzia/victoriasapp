@@ -20,6 +20,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build -w @victoriasapp/shared && npm run build -w @victoriasapp/api && npm run build -w @victoriasapp/web",
+    "build:web:netlify": "npm run build -w @victoriasapp/shared && npm run config -w @victoriasapp/web && npm run build -w @victoriasapp/web",
     "postinstall": "npm run build -w @victoriasapp/shared",
     "dev:shared": "tsc -p packages/shared/tsconfig.json --watch --preserveWatchOutput",
     "dev:api": "npm run dev -w @victoriasapp/api",

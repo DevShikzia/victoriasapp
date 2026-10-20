@@ -13,22 +13,22 @@
   padding: 0.6rem 0.9rem;
   border: 1px solid transparent;
   border-radius: 0.5rem;
-  background: var(--acento, #14532d);
-  color: #fff;
+  background: var(--acento);
+  color: var(--texto-inverso);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 
   &--suave {
-    background: #e8ecef;
-    color: #1a1a1a;
-    border-color: #cdd4d9;
+    background: var(--superficie-2);
+    color: var(--texto);
+    border-color: var(--borde);
   }
 }
 
 .estado {
   font-size: 0.85rem;
-  color: var(--texto-suave, #555);
+  color: var(--texto-suave);
 }
 
 .video {
@@ -51,7 +51,7 @@
   margin: 0.6rem 0 0;
   padding: 0.5rem 0.7rem;
   border-radius: 0.5rem;
-  background: #fdecea;
-  color: #b3261e;
-  border: 1px solid #f5c6c2;
+  background: var(--peligro-suave);
+  color: var(--peligro);
+  border: 1px solid var(--peligro-borde);
 }

@@ -8,15 +8,16 @@ auto**, incluso sin internet. Los datos se actualizan permanentemente y deben se
 ```
 Barrio
  └─ Lote (nº)
-     └─ Propietario (titular, normalmente señor y señora)
-         ├─ Vehículo(s)
-         └─ Familiar(es) (hijos, etc.)
-              └─ Vehículo(s)
+     ├─ Propietario(s) (titular, normalmente señor y señora)
+     ├─ Familiar(es) (hijos, etc.)
+     └─ Vehículo(s) (usuarios: propietarios y familiares del lote)
 ```
 
-Un **lote** tiene uno o más **propietarios** (por ejemplo, "Juan Pérez" y "Ana Gómez"). Cada
-propietario puede tener **vehículos** y **familiares**, y cada familiar puede tener sus propios
-**vehículos**.
+Un **lote** tiene uno o más **propietarios** (por ejemplo, "Juan Pérez" y "Ana Gómez"). Los
+propietarios y familiares del lote pueden ser **usuarios de uno o más vehículos**. La asignación
+del propietario al lote se hace desde el ABM de propietarios (`Propietario.loteId`); al elegir un
+lote, el listado de lotes muestra automáticamente a todos sus titulares ordenados por jerarquía:
+**señor**, **señora** y luego por apellido/nombre.
 
 ## Barrio activo
 
@@ -36,7 +37,8 @@ token; a partir de ahí:
 - **Propietario:** nombre, apellido, **tratamiento** (`señor` / `señora`), teléfono, email,
   descripción libre.
 - **Familiar:** nombre, parentesco, descripción.
-- **Vehículo:** patente, marca, modelo, color, descripción, a quién pertenece (propietario o familiar).
+- **Vehículo:** patente opcional, marca, modelo, color, descripción, lote y usuarios (uno o varios
+  propietarios/familiares de ese lote).
 - **Lote:** número, calle, notas.
 
 ## Búsquedas
@@ -116,7 +118,11 @@ contra la API, sólo para `admin`/`supervisor`:
   pestaña**: se elige al iniciar sesión.
 - Alta, edición y borrado (con confirmación). Los desplegables de referencias (`barrioId`, `loteId`,
   `propietarioId`, …) salen de las listas cargadas al entrar; `barrioId` sólo contiene el barrio
-  activo. El alta/edición de propietarios incluye el **tratamiento** (`Señor` / `Señora`).
+  activo. El alta/edición de propietarios incluye el **lote** y el **tratamiento**
+  (`Señor` / `Señora`). El formulario de lotes **no** elige propietario: muestra la lista derivada
+  de titulares.
+- En vehículos se elige primero el **lote** y después, en un multiselect, sus propietarios y
+  familiares que usan el vehículo. La patente puede quedar vacía.
 - Importación de CSV: subiendo un archivo o pegando el contenido, siempre en el barrio activo.
 - Después de cada cambio, dispara un sync para bajar el directorio actualizado a IndexedDB.
 

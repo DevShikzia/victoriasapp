@@ -1,8 +1,11 @@
-# victoriasapp
+# MatiApp
 
 Sistema de control de accesos para barrios cerrados. Permite a los guardias escanear el DNI
 de los visitantes (QR, PDF417 y MRZ) para autocompletar los datos y registrar el ingreso/egreso
 sin tener que anotar todo a mano.
+
+> Nombre de producto: **MatiApp**. Los paquetes internos (`@victoriasapp/*`) y la base
+> `victoriasapp` conservan su nombre técnico para no romper datos ni despliegues existentes.
 
 - **Frontend:** Angular (PWA, offline-first)
 - **Backend:** Node.js + TypeScript + Express + Mongoose (MongoDB)
@@ -39,8 +42,10 @@ Toda la documentación vive en [`docs/`](./docs). Empezá por el índice: [`docs
 | [09 - Directorio del barrio](./docs/09-directorio-barrio.md) | Propietarios, lotes, vehículos |
 | [10 - Roadmap](./docs/10-roadmap.md) | Fases de construcción |
 | [11 - Convenciones de código](./docs/11-convenciones-de-codigo.md) | TypeScript estricto, sin `any` |
-| [12 - Git y deploy](./docs/12-git-y-deploy.md) | Ramas, commits, despliegue |
+| [12 - Git y deploy](./docs/12-git-y-deploy.md) | Ramas, commits, Netlify + Render |
 | [13 - Testing](./docs/13-testing.md) | Estrategia de pruebas |
+| [14 - Pendientes](./docs/14-pendientes.md) | TODO y bloqueos |
+| [15 - Buscador y rediseño](./docs/15-buscador-global-y-rediseno-mobile.md) | Búsqueda global y mobile-first |
 
 ## Estructura del repositorio
 
@@ -76,6 +81,16 @@ npm run start -w apps/web
 
 > La PWA necesita **HTTPS** para acceder a la cámara desde el celular (salvo en `localhost`).
 > Ver [deploy](./docs/12-git-y-deploy.md).
+
+## Deploy rápido
+
+| Parte | Plataforma | Configuración |
+| --- | --- | --- |
+| PWA | Netlify | `netlify.toml` + `MATIAPP_API_URL` |
+| API | Render | `render.yaml` + MongoDB Atlas |
+| Base de datos | MongoDB Atlas | Cluster M0 y URI `mongodb+srv://…` |
+
+El detalle paso a paso está en [docs/12-git-y-deploy.md](./docs/12-git-y-deploy.md).
 
 ## Privacidad
 

@@ -138,12 +138,14 @@
           />
           <datalist id="lista-patentes">
             @for (v of sugerenciasVehiculos(); track v.uuid) {
-              <option [value]="v.patente">
-                {{ v.propietarioNombre ?? 'Sin dueño' }}
-                @if (v.loteNumero) {
-                  · Lote {{ v.loteNumero }}
-                }
-              </option>
+              @if (v.patente !== null) {
+                <option [value]="v.patente">
+                  {{ v.propietarioNombre ?? 'Sin dueño' }}
+                  @if (v.loteNumero) {
+                    · Lote {{ v.loteNumero }}
+                  }
+                </option>
+              }
             }
           </datalist>
         </label>

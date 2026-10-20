@@ -65,9 +65,10 @@ interface FamiliarLocal {
 }
 
 interface VehiculoLocal {
-  readonly patente: string;
+  readonly patente: string | null;
   readonly marca: string | null;
   readonly modelo: string | null;
+  readonly usuariosNombres: readonly string[];
   readonly propietarioNombre: string | null;
   readonly loteNumero: string | null;
   // …
@@ -128,7 +129,7 @@ Tokens en `apps/web/src/styles.scss`:
 
 | Grupo | Tokens |
 | --- | --- |
-| Color | `--acento`, `--acento-claro`, `--acento-suave`, `--fondo`, `--superficie`, `--borde`, `--texto`, `--texto-suave`, `--alerta`, `--peligro` |
+| Color | `--marca-1`, `--marca-2`, `--marca-3`, `--degradado-marca`, `--acento`, `--acento-claro`, `--acento-suave`, `--fondo`, `--superficie`, `--borde`, `--texto`, `--texto-suave`, `--alerta`, `--peligro`, `--exito`, `--info` |
 | Espaciado | `--esp-1` … `--esp-6` |
 | Radios | `--radio-sm`, `--radio`, `--radio-lg`, `--radio-pill` |
 | Sombras | `--sombra-1`, `--sombra-2`, `--sombra-3` |

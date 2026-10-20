@@ -58,4 +58,9 @@ certs/
 
 # Otros
 *.local
+*.local.md
 .eslintcache
+
+# Guías locales de despliegue (no se suben al repositorio)
+README-NETLIFY.local.md
+README-BACKEND.local.md

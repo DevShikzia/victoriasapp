@@ -164,10 +164,15 @@ barrio activo; para crear uno se usa `PUT /api/auth/barrio`.
 | Lote | `/api/lotes` | `q` (número) |
 | Propietario | `/api/propietarios` | `q` (nombre o apellido), `lote` |
 | Familiar | `/api/familiares` | `q` (nombre), `propietarioId` |
-| Vehículo | `/api/vehiculos` | `patente`, `propietarioId` |
+| Vehículo | `/api/vehiculos` | `patente`, `propietarioId` (incluye vehículos donde es usuario) |
 
 En todos: `GET /` (lista), `POST /`, `GET /:id`, `PATCH /:id`, `DELETE /:id`. Paginación `page`
 (default 1) y `limit` (por defecto 200, máximo 500).
+
+`POST/PATCH /api/vehiculos` recibe `{ patente?, marca, modelo, color, loteId, propietarioIds,
+familiarIds, descripcion }`. `patente` es opcional y las dos listas contienen ids de usuarios del
+lote elegido. Los campos singulares `propietarioId`/`familiarId` se conservan sólo como espejo de
+compatibilidad para documentos viejos.
 
 ### `GET /api/directorio?desde=<ISO>`
 

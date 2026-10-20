@@ -30,7 +30,7 @@ Lista viva de cosas a resolver. Se tachan cuando están hechas (o se mueven al
       nivel API).
 - [ ] Probar la PWA rediseñada en un **celular real**: bottom bar, ficha de búsqueda y formulario
       con el teclado abierto (incluye `safe-area` en iPhone).
-- [ ] Nombre definitivo del producto (hoy "Victorias · El Pare").
+- [x] Nombre definitivo del producto: **MatiApp**.
 
 ## 🟢 Hechas
 

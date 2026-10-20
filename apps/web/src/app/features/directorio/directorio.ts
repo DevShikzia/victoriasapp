@@ -11,6 +11,7 @@ import {
   ENTIDADES_DIRECTORIO,
   etiquetaTratamiento,
   normalizarTratamiento,
+  rangoTratamiento,
   type EntidadDirectorio,
   type ResultadoImportacion,
 } from '@victoriasapp/shared';
@@ -29,8 +30,36 @@ import {
   type ColumnaEntidad,
 } from './config-entidades';
 
-type ValorFormulario = string | boolean;
+type ValorFormulario = string | boolean | readonly string[];
 type ModeloFormulario = Record<string, ValorFormulario>;
+
+/** Opción unificada para los selects simples y múltiples. */
+interface OpcionFormulario {
+  readonly valor: string;
+  readonly etiqueta: string;
+}
+
+/** Convierte un valor desconocido en una lista de ids de texto. */
+function idsDe(valor: unknown): readonly string[] {
+  if (!Array.isArray(valor)) {
+    return [];
+  }
+  const ids: string[] = [];
+  const items: readonly unknown[] = valor;
+  for (const item of items) {
+    if (typeof item === 'string' && item.trim() !== '') {
+      ids.push(item);
+    }
+  }
+  return ids;
+}
+
+function comoArreglo(valor: ValorFormulario | undefined): readonly string[] {
+  if (typeof valor === 'boolean' || typeof valor === 'string' || valor === undefined) {
+    return [];
+  }
+  return valor;
+}
 
 /** Lee una propiedad de un registro de forma segura (la clave existe en el DTO). */
 function valorDe(registro: RegistroDirectorio, clave: string): unknown {
@@ -65,8 +94,16 @@ function etiquetaDeRegistro(entidad: EntidadDirectorio, registro: RegistroDirect
       const nombre = texto(valorDe(registro, 'nombre'));
       return nombre === '' ? '(familiar)' : nombre;
     }
-    case 'vehiculo':
-      return texto(valorDe(registro, 'patente'));
+    case 'vehiculo': {
+      const patente = texto(valorDe(registro, 'patente'));
+      if (patente !== '') {
+        return patente;
+      }
+      const descripcion = `${texto(valorDe(registro, 'marca'))} ${texto(
+        valorDe(registro, 'modelo'),
+      )}`.trim();
+      return descripcion === '' ? '(vehículo)' : descripcion;
+    }
   }
 }
 
@@ -159,6 +196,17 @@ export class Directorio implements OnInit {
   }
 
   protected valorVisible(registro: RegistroDirectorio, columna: ColumnaEntidad): string {
+    if (this.entidad() === 'lote' && columna.clave === 'propietarios') {
+      const propietarios = this.propietariosDeLote(texto(valorDe(registro, 'id')));
+      return propietarios.length === 0
+        ? '—'
+        : propietarios.map((propietario) => this.etiquetaPropietario(propietario)).join(' / ');
+    }
+    if (this.entidad() === 'vehiculo' && columna.clave === 'usuarios') {
+      const usuarios = this.usuariosDeVehiculo(registro);
+      return usuarios.length === 0 ? '—' : usuarios.join(' · ');
+    }
+
     const valor = valorDe(registro, columna.clave);
     if (columna.fuente !== undefined) {
       return valor === null || valor === undefined
@@ -195,6 +243,13 @@ export class Directorio implements OnInit {
   protected editar(registro: RegistroDirectorio): void {
     const modelo: ModeloFormulario = {};
     for (const campo of this.campos()) {
+      if (campo.clave === 'usuarios') {
+        modelo[campo.clave] = [
+          ...idsDe(valorDe(registro, 'propietarioIds')).map((id) => `p:${id}`),
+          ...idsDe(valorDe(registro, 'familiarIds')).map((id) => `f:${id}`),
+        ];
+        continue;
+      }
       const valor = valorDe(registro, campo.clave);
       modelo[campo.clave] =
         campo.tipo === 'booleano'
@@ -219,17 +274,34 @@ export class Directorio implements OnInit {
   }
 
   protected actualizarCampo(clave: string, valor: ValorFormulario): void {
-    this.modelo.update((m) => ({ ...m, [clave]: valor }));
+    if (this.entidad() === 'vehiculo' && clave === 'loteId') {
+      const loteId = typeof valor === 'string' ? valor : '';
+      const validos = new Set(this.opcionesUsuariosDeLote(loteId).map((opcion) => opcion.valor));
+      this.modelo.update((modelo) => ({
+        ...modelo,
+        loteId,
+        usuarios: comoArreglo(modelo['usuarios']).filter((usuario) => validos.has(usuario)),
+      }));
+      return;
+    }
+    this.modelo.update((modelo) => ({ ...modelo, [clave]: valor }));
   }
 
-  protected opciones(campo: CampoEntidad): readonly RegistroDirectorio[] {
-    return campo.fuente === undefined ? [] : this.referencias()[campo.fuente];
-  }
-
-  protected etiquetaOpcionDe(campo: CampoEntidad, registro: RegistroDirectorio): string {
-    return campo.fuente === undefined
-      ? texto(valorDe(registro, 'id'))
-      : etiquetaDeRegistro(campo.fuente, registro);
+  protected opciones(campo: CampoEntidad): readonly OpcionFormulario[] {
+    if (campo.tipo === 'multiseleccion' && campo.opcionesDeLote === true) {
+      return this.opcionesUsuariosDeLote(texto(this.modelo()['loteId']));
+    }
+    if (campo.opciones !== undefined) {
+      return campo.opciones;
+    }
+    if (campo.fuente === undefined) {
+      return [];
+    }
+    const fuente = campo.fuente;
+    return this.referencias()[fuente].map((registro) => ({
+      valor: texto(valorDe(registro, 'id')),
+      etiqueta: etiquetaDeRegistro(fuente, registro),
+    }));
   }
 
   protected nombrePlural(entidad: EntidadDirectorio): string {
@@ -246,6 +318,21 @@ export class Directorio implements OnInit {
       const valor = modelo[campo.clave];
       if (campo.tipo === 'booleano') {
         cuerpo[campo.clave] = valor === true;
+        continue;
+      }
+      if (campo.tipo === 'multiseleccion') {
+        const seleccionados = comoArreglo(valor);
+        if (campo.clave === 'usuarios') {
+          // El formulario usa valores `p:<id>` / `f:<id>`; la API recibe listas.
+          cuerpo['propietarioIds'] = seleccionados
+            .filter((usuario) => usuario.startsWith('p:'))
+            .map((usuario) => usuario.slice(2));
+          cuerpo['familiarIds'] = seleccionados
+            .filter((usuario) => usuario.startsWith('f:'))
+            .map((usuario) => usuario.slice(2));
+        } else {
+          cuerpo[campo.clave] = seleccionados;
+        }
         continue;
       }
       const limpio = typeof valor === 'string' ? valor.trim() : '';
@@ -338,9 +425,115 @@ export class Directorio implements OnInit {
   private modeloVacio(): ModeloFormulario {
     const modelo: ModeloFormulario = {};
     for (const campo of this.campos()) {
-      modelo[campo.clave] = campo.tipo === 'booleano' ? true : '';
+      if (campo.tipo === 'booleano') {
+        modelo[campo.clave] = true;
+      } else if (campo.tipo === 'multiseleccion') {
+        modelo[campo.clave] = [];
+      } else {
+        modelo[campo.clave] = '';
+      }
     }
     return modelo;
+  }
+
+  /** Propietarios de un lote, ordenados por jerarquía (señor, señora, …). */
+  private propietariosDeLote(loteId: string): readonly RegistroDirectorio[] {
+    if (loteId === '') {
+      return [];
+    }
+    return this.referencias()
+      .propietario.filter((propietario) => texto(valorDe(propietario, 'loteId')) === loteId)
+      .slice()
+      .sort((a, b) => this.compararPropietarios(a, b));
+  }
+
+  private compararPropietarios(a: RegistroDirectorio, b: RegistroDirectorio): number {
+    const tratamientoA = normalizarTratamiento(texto(valorDe(a, 'tratamiento')));
+    const tratamientoB = normalizarTratamiento(texto(valorDe(b, 'tratamiento')));
+    const porTratamiento = rangoTratamiento(tratamientoA) - rangoTratamiento(tratamientoB);
+    if (porTratamiento !== 0) {
+      return porTratamiento;
+    }
+    const porApellido = texto(valorDe(a, 'apellido')).localeCompare(
+      texto(valorDe(b, 'apellido')),
+      'es',
+      { sensitivity: 'base', numeric: true },
+    );
+    return porApellido !== 0
+      ? porApellido
+      : texto(valorDe(a, 'nombre')).localeCompare(texto(valorDe(b, 'nombre')), 'es', {
+          sensitivity: 'base',
+          numeric: true,
+        });
+  }
+
+  private etiquetaPropietario(propietario: RegistroDirectorio): string {
+    const tratamiento = etiquetaTratamiento(
+      normalizarTratamiento(texto(valorDe(propietario, 'tratamiento'))),
+    );
+    const nombre = `${texto(valorDe(propietario, 'nombre'))} ${texto(
+      valorDe(propietario, 'apellido'),
+    )}`.trim();
+    return tratamiento === null ? nombre : `${tratamiento} ${nombre}`;
+  }
+
+  /** Nombres de los propietarios y familiares que usan un vehículo. */
+  private usuariosDeVehiculo(vehiculo: RegistroDirectorio): readonly string[] {
+    const usuarios: string[] = [];
+    for (const id of idsDe(valorDe(vehiculo, 'propietarioIds'))) {
+      const propietario = this.referencias().propietario.find(
+        (registro) => texto(valorDe(registro, 'id')) === id,
+      );
+      if (propietario !== undefined) {
+        usuarios.push(`${etiquetaDeRegistro('propietario', propietario)} (propietario)`);
+      }
+    }
+    for (const id of idsDe(valorDe(vehiculo, 'familiarIds'))) {
+      const familiar = this.referencias().familiar.find(
+        (registro) => texto(valorDe(registro, 'id')) === id,
+      );
+      if (familiar !== undefined) {
+        usuarios.push(`${etiquetaDeRegistro('familiar', familiar)} (familiar)`);
+      }
+    }
+    return usuarios;
+  }
+
+  /** Opciones del multiselect: propietarios y familiares del lote elegido. */
+  private opcionesUsuariosDeLote(loteId: string): readonly OpcionFormulario[] {
+    if (loteId === '') {
+      return [];
+    }
+    const propietarios = this.propietariosDeLote(loteId);
+    const idsPropietarios = new Set(
+      propietarios.map((propietario) => texto(valorDe(propietario, 'id'))),
+    );
+    const familiares = this.referencias()
+      .familiar.filter((familiar) => {
+        const loteFamiliar = texto(valorDe(familiar, 'loteId'));
+        if (loteFamiliar !== '') {
+          return loteFamiliar === loteId;
+        }
+        return idsPropietarios.has(texto(valorDe(familiar, 'propietarioId')));
+      })
+      .slice()
+      .sort((a, b) =>
+        texto(valorDe(a, 'nombre')).localeCompare(texto(valorDe(b, 'nombre')), 'es', {
+          sensitivity: 'base',
+          numeric: true,
+        }),
+      );
+
+    return [
+      ...propietarios.map((propietario) => ({
+        valor: `p:${texto(valorDe(propietario, 'id'))}`,
+        etiqueta: `${this.etiquetaPropietario(propietario)} · propietario`,
+      })),
+      ...familiares.map((familiar) => ({
+        valor: `f:${texto(valorDe(familiar, 'id'))}`,
+        etiqueta: `${etiquetaDeRegistro('familiar', familiar)} · familiar`,
+      })),
+    ];
   }
 
   private async cargarReferencias(): Promise<void> {

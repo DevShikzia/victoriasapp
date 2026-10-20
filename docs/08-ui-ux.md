@@ -37,7 +37,7 @@ tamaños sueltos:
 
 | Grupo | Tokens |
 | --- | --- |
-| Color | `--acento`, `--acento-claro`, `--acento-suave`, `--fondo`, `--superficie`, `--borde`, `--texto`, `--texto-suave`, `--alerta`, `--peligro`, `--info` |
+| Color | `--marca-1`, `--marca-2`, `--marca-3`, `--degradado-marca`, `--acento`, `--acento-claro`, `--acento-suave`, `--fondo`, `--superficie`, `--borde`, `--texto`, `--texto-suave`, `--alerta`, `--peligro`, `--info`, `--exito`, `--violeta` |
 | Espaciado | `--esp-1` … `--esp-6` |
 | Radios | `--radio-sm`, `--radio`, `--radio-lg`, `--radio-pill` |
 | Sombras | `--sombra-1`, `--sombra-2`, `--sombra-3` |
@@ -152,7 +152,7 @@ En las pantallas de administración las **tablas se convierten en tarjetas** en 
 
 ```
 ┌────────────────────────────┐
-│ Victorias · El Pare   ● En línea  ⟳ │
+│ MatiApp   ● En línea  ⟳ │
 ├────────────────────────────┤
 │ Buscar                     │
 │ ┌────────────────────────┐ │

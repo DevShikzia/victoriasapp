@@ -73,7 +73,8 @@
 }
 
 .buscador__campo::placeholder {
-  color: #8a988f;
+  color: var(--texto-suave);
+  opacity: 0.75;
 }
 
 .buscador__campo::-webkit-search-cancel-button {
@@ -231,8 +232,8 @@
 }
 
 .tratamiento--senora {
-  background: #fce7f3;
-  color: #9d174d;
+  background: var(--violeta-suave);
+  color: var(--violeta);
 }
 
 .propietario__flecha {

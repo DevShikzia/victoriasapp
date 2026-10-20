@@ -624,7 +624,126 @@ describe('directorio', () => {
       .get('/api/vehiculos?patente=ab123cd')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    const lista = (cuerpoJson(respuesta) as CuerpoData<{ patente: string }[]>).data;
+    const lista = (cuerpoJson(respuesta) as CuerpoData<{ patente: string | null }[]>).data;
     expect(lista.some((v) => v.patente === 'AB123CD')).toBe(true);
+  });
+
+  it('refleja todos los propietarios de un lote ordenados por jerarquía', async () => {
+    const token = await tokenAdmin();
+    const loteResponse = await request(app)
+      .post('/api/lotes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ numero: '99', calle: 'Los Tilos' })
+      .expect(201);
+    const lote = (cuerpoJson(loteResponse) as CuerpoData<{ id: string }>).data;
+
+    // La señora se crea primero para comprobar que el orden no depende del alta.
+    const senoraResponse = await request(app)
+      .post('/api/propietarios')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        nombre: 'Marta',
+        apellido: 'Suarez',
+        tratamiento: 'senora',
+        loteId: lote.id,
+      })
+      .expect(201);
+    const senora = (cuerpoJson(senoraResponse) as CuerpoData<{ id: string }>).data;
+    const senorResponse = await request(app)
+      .post('/api/propietarios')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        nombre: 'Raul',
+        apellido: 'Suarez',
+        tratamiento: 'senor',
+        loteId: lote.id,
+      })
+      .expect(201);
+    const senor = (cuerpoJson(senorResponse) as CuerpoData<{ id: string }>).data;
+
+    const listado = await request(app)
+      .get('/api/lotes?q=99')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const lotes = (cuerpoJson(listado) as CuerpoData<{ id: string; propietarioId: string }[]>).data;
+    expect(lotes.find((item) => item.id === lote.id)?.propietarioId).toBe(senor.id);
+    expect(senora.id).not.toBe(senor.id);
+
+    const pull = await request(app)
+      .get('/api/directorio')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const datos = (cuerpoJson(pull) as CuerpoData<DirectorioPull>).data;
+    const loteLocal = datos.lotes.find((item) => item.numero === '99');
+    expect(loteLocal?.propietarioNombre).toBe('Raul Suarez / Marta Suarez');
+  });
+
+  it('permite un vehículo sin patente y con varios usuarios del lote', async () => {
+    const token = await tokenAdmin();
+    const loteResponse = await request(app)
+      .post('/api/lotes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ numero: '100', calle: 'Los Tilos' })
+      .expect(201);
+    const lote = (cuerpoJson(loteResponse) as CuerpoData<{ id: string }>).data;
+    const propietarioResponse = await request(app)
+      .post('/api/propietarios')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        nombre: 'Elena',
+        apellido: 'Paz',
+        tratamiento: 'senora',
+        loteId: lote.id,
+      })
+      .expect(201);
+    const propietario = (cuerpoJson(propietarioResponse) as CuerpoData<{ id: string }>).data;
+    const familiarResponse = await request(app)
+      .post('/api/familiares')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ nombre: 'Tomas Paz', parentesco: 'hijo', propietarioId: propietario.id })
+      .expect(201);
+    const familiar = (cuerpoJson(familiarResponse) as CuerpoData<{ id: string }>).data;
+
+    const creado = await request(app)
+      .post('/api/vehiculos')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        patente: '',
+        marca: 'Fiat',
+        modelo: 'Cronos',
+        loteId: lote.id,
+        propietarioIds: [propietario.id],
+        familiarIds: [familiar.id],
+      })
+      .expect(201);
+    const vehiculo = (
+      cuerpoJson(creado) as CuerpoData<{
+        id: string;
+        uuid: string;
+        patente: string | null;
+        propietarioIds: string[];
+        familiarIds: string[];
+      }>
+    ).data;
+    expect(vehiculo.patente).toBeNull();
+    expect(vehiculo.propietarioIds).toEqual([propietario.id]);
+    expect(vehiculo.familiarIds).toEqual([familiar.id]);
+
+    // Otro vehículo sin patente: el índice único es parcial y no debe chocar.
+    await request(app)
+      .post('/api/vehiculos')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ loteId: lote.id, marca: 'Renault', modelo: 'Kangoo' })
+      .expect(201);
+
+    const pull = await request(app)
+      .get('/api/directorio')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const datos = (cuerpoJson(pull) as CuerpoData<DirectorioPull>).data;
+    const local = datos.vehiculos.find((item) => item.uuid === vehiculo.uuid);
+    expect(local?.patente).toBeNull();
+    expect(local?.loteNumero).toBe('100');
+    expect(local?.usuariosNombres).toEqual(['Elena Paz', 'Tomas Paz']);
   });
 });

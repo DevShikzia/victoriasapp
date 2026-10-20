@@ -50,11 +50,15 @@ Todas las colecciones usan TypeScript estricto (sin `any`). Los esquemas Mongoos
 | --- | --- | --- |
 | `barrioId` | ObjectId | Ref `barrios` |
 | `numero` | string | Número de lote |
-| `propietarioId` | ObjectId \| null | Ref `propietarios` |
+| `propietarioId` | ObjectId \| null | Titular principal (espejo ordenado de `Propietario.loteId`) |
 | `calle` | string \| null | |
 | `notas` | string \| null | |
 
 Índices: `{ barrioId, numero }` (único), `numero`.
+
+> Un lote puede tener **varios propietarios**. La fuente de verdad es `Propietario.loteId`; el
+> `propietarioId` del lote se recalcula automáticamente al crear/editar/borrar titulares o al
+> importar el CSV, dejando primero al **señor**, después a la **señora** y luego por apellido/nombre.
 
 ### `propietarios` — Titulares (señor / señora)
 
@@ -92,16 +96,20 @@ Todas las colecciones usan TypeScript estricto (sin `any`). Los esquemas Mongoos
 
 | Campo | Tipo | Notas |
 | --- | --- | --- |
-| `patente` | string | Normalizada (mayúsculas, sin espacios) |
+| `patente` | string \| null | Opcional; normalizada (mayúsculas, sin espacios) |
 | `marca` | string \| null | |
 | `modelo` | string \| null | |
 | `color` | string \| null | |
-| `propietarioId` | ObjectId \| null | Ref `propietarios` |
-| `familiarId` | ObjectId \| null | Ref `familiares` |
-| `loteId` | ObjectId \| null | Ref `lotes` |
+| `loteId` | ObjectId \| null | Ref `lotes`; el vehículo se asocia a un lote |
+| `propietarioIds` | ObjectId[] | Propietarios del lote que usan el vehículo |
+| `familiarIds` | ObjectId[] | Familiares del lote que usan el vehículo |
 | `descripcion` | string \| null | |
 
-Índices: `patente` (único), `loteId`.
+Índices: `patente` (único parcial, sólo si existe), `loteId`.
+
+> El formulario elige primero el lote y luego permite marcar uno o varios **usuarios** (propietarios
+> y familiares de ese lote). `propietarioId` y `familiarId` singulares quedan sólo como espejo de
+> compatibilidad para documentos viejos; la API nueva usa las listas.
 
 > Las cinco entidades del directorio (`barrios`, `lotes`, `propietarios`, `familiares`, `vehiculos`)
 > llevan además un campo **`uuid`** (único) para poder crearlas/editarlas offline de forma idempotente,

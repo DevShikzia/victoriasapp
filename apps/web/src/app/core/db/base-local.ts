@@ -39,6 +39,34 @@ export class BaseLocal extends Dexie {
       sesion: 'usuario',
       meta: 'clave',
     });
+    // v2: los vehículos ahora pueden tener varios usuarios. Completamos el
+    // campo nuevo en las cachés viejas para que la búsqueda siga funcionando.
+    this.version(2)
+      .stores({
+        visitas: 'uuid, entradaEn, dni, patente, loteNumero, estadoSync',
+        outbox: 'id, entidad, uuid, creadoEn',
+        lotes: 'uuid, numero',
+        propietarios: 'uuid, apellido, nombre, loteNumero',
+        familiares: 'uuid, nombre, propietarioNombre, loteNumero',
+        vehiculos: 'uuid, patente, loteNumero',
+        sesion: 'usuario',
+        meta: 'clave',
+      })
+      .upgrade(async (transaccion) => {
+        await transaccion
+          .table<VehiculoLocal>('vehiculos')
+          .toCollection()
+          .modify((vehiculo) => {
+            const mutable: {
+              usuariosNombres?: readonly string[];
+              propietarioNombre?: string | null;
+            } = vehiculo;
+            mutable.usuariosNombres ??=
+              mutable.propietarioNombre === null || mutable.propietarioNombre === undefined
+                ? []
+                : [mutable.propietarioNombre];
+          });
+      });
   }
 }
 

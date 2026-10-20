@@ -233,7 +233,7 @@
 
                 <span class="fila__cuerpo">
                   <span class="fila__titulo">
-                    @for (s of segmentos(v.patente, consulta()); track $index) {
+                    @for (s of segmentos(tituloVehiculo(v), consulta()); track $index) {
                       <span [class.coincide]="s.coincide">{{ s.texto }}</span>
                     }
                   </span>
@@ -241,8 +241,8 @@
                     @if (descripcionVehiculo(v) !== '') {
                       <span>{{ descripcionVehiculo(v) }}</span>
                     }
-                    @if (v.propietarioNombre !== null) {
-                      <span>{{ v.propietarioNombre }}</span>
+                    @if (v.usuariosNombres.length > 0) {
+                      <span>{{ v.usuariosNombres.join(' / ') }}</span>
                     }
                     @if (v.loteNumero !== null) {
                       <span>Lote {{ v.loteNumero }}</span>

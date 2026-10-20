@@ -12,8 +12,8 @@ export const COOKIE_REFRESH = 'victoriasapp_refresh';
 function opciones(env: Env): CookieOptions {
   return {
     httpOnly: true,
-    secure: env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: env.NODE_ENV === 'production' || env.COOKIE_SAMESITE === 'none',
+    sameSite: env.COOKIE_SAMESITE,
     path: '/api/auth',
     maxAge: env.REFRESH_TOKEN_SEGUNDOS * 1000,
   };

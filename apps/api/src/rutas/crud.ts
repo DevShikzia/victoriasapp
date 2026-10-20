@@ -40,6 +40,12 @@ export interface ConfigCrud<
    */
   readonly alcance?: (req: Request) => Promise<FilterQuery<T>> | FilterQuery<T>;
   readonly orden?: Record<string, 1 | -1>;
+  /** Se ejecuta después de guardar un documento nuevo (ya tiene `_id`). */
+  readonly despuesDeCrear?: (doc: HydratedDocument<T>, req: Request) => void | Promise<void>;
+  /** Se ejecuta después de aplicar y guardar un patch. */
+  readonly despuesDeActualizar?: (doc: HydratedDocument<T>, req: Request) => void | Promise<void>;
+  /** Se ejecuta después del borrado lógico (el documento todavía conserva sus datos). */
+  readonly despuesDeEliminar?: (doc: HydratedDocument<T>, req: Request) => void | Promise<void>;
 }
 
 /** Combina condiciones no vacías; `{}` si no hay ninguna. */
@@ -135,6 +141,7 @@ export function crearRutasCrud<
     asincrono(async (req, res) => {
       const datos = validar(config.crear, req.body);
       const doc = await config.modelo.create(await config.construir(datos, req));
+      await config.despuesDeCrear?.(doc, req);
       publicar('directorio:actualizado', {
         entidad: config.entidad,
         uuid: doc.uuid,
@@ -170,6 +177,7 @@ export function crearRutasCrud<
       }
       await config.aplicar(doc, datos, req);
       await doc.save();
+      await config.despuesDeActualizar?.(doc, req);
       publicar('directorio:actualizado', {
         entidad: config.entidad,
         uuid: doc.uuid,
@@ -191,6 +199,7 @@ export function crearRutasCrud<
       }
       const uuid = doc.uuid;
       await config.modelo.deleteOne({ _id: doc._id });
+      await config.despuesDeEliminar?.(doc, req);
       await EliminadoModel.create({ uuid, entidad: config.entidad, eliminadoEn: new Date() });
       publicar('directorio:actualizado', {
         entidad: config.entidad,

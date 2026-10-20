@@ -8,7 +8,7 @@
 ## Configuración inicial
 
 ```bash
-echo "# victoriasapp" >> README.md
+echo "# MatiApp" >> README.md
 git init
 git add README.md
 git commit -m "first commit"
@@ -58,6 +58,7 @@ Nunca se comitea `.env`. Se provee un `.env.example` con la forma de cada variab
 | `ACCESS_TOKEN_SEGUNDOS` | Vida del access token en segundos (por defecto `900`) |
 | `REFRESH_TOKEN_SEGUNDOS` | Vida del refresh token en segundos (por defecto `604800`) |
 | `CORS_ORIGINS` | Orígenes permitidos (separados por coma) |
+| `COOKIE_SAMESITE` | `strict` en local; `none` si el PWA y la API están en dominios distintos |
 | `NODE_ENV` | `development` \| `test` \| `production` |
 | `ADMIN_USUARIO` | Usuario administrador a crear (por defecto `admin`) |
 | `ADMIN_NOMBRE` | Nombre del administrador |
@@ -72,7 +73,7 @@ corre la API, así que `dotenv` lee `apps/api/.env`).
 | Entorno | Frontend | API | Mongo |
 | --- | --- | --- | --- |
 | Local | `ng serve` | `tsx watch` | Docker |
-| Producción | Build estático (HTTPS) | Node en un servidor/VPS | MongoDB |
+| Producción | Netlify (estático, HTTPS) | Render (Node + Socket.IO) | MongoDB Atlas |
 
 ### Local con Docker
 
@@ -86,7 +87,7 @@ npm run start -w apps/web      # levanta el PWA
 
 El PWA y la API viajan por **el mismo origen**: el dev server de Angular hace de proxy hacia la API
 (`apps/web/proxy.conf.json`), así que no hace falta tocar CORS ni la URL de la API al cambiar de
-dispositivo (`CONFIG.apiBaseUrl` usa `window.location.origin`).
+dispositivo (`CONFIG.apiBaseUrl` usa `window.location.origin` si `config.js` está vacío).
 
 ```bash
 npm run dev:api        # API (escucha en la red)
@@ -106,11 +107,7 @@ El celular **sólo** accede a la cámara en un contexto seguro:
 - `localhost` (desarrollo en la misma máquina), o
 - Un sitio con **HTTPS** y certificado válido.
 
-Opciones para producción:
-
-1. **VPS + dominio + Let's Encrypt** (recomendado, simple).
-2. Plataforma con HTTPS automático (Render, Railway, Fly.io, etc.).
-3. Túnel (Cloudflare Tunnel) hacia un servidor propio.
+Netlify y Render dan HTTPS automático, así que en producción no hay que hacer nada extra.
 
 ### HTTPS para desarrollo (mkcert)
 
@@ -125,15 +122,123 @@ npm run dev:web:https  # ng serve --ssl con ese certificado
 Ajustes > Seguridad > Instalar certificado > CA). Después abrí `https://<IP-de-la-PC>:4200`. El proxy
 sigue mandando la API a `http://localhost:3000`, así que sólo el PWA va por TLS.
 
-El frontend se sirve como estáticos; la API detrás de un proxy (`nginx` o el del proveedor).
+## Producción: Netlify + Render + MongoDB Atlas
+
+Arquitectura recomendada:
+
+```
+Celular / PC
+   │  HTTPS
+   ▼
+Netlify  (PWA estática, service worker)
+   │  HTTPS + WSS (API absoluta en config.js)
+   ▼
+Render   (Node + Express + Socket.IO)
+   │  mongodb+srv
+   ▼
+MongoDB Atlas
+```
+
+La API **no** puede vivir en Netlify Functions: Socket.IO necesita un proceso persistente y MongoDB
+necesita una conexión de larga duración. Por eso el backend va a Render (o cualquier host Node con
+WebSockets).
+
+### 1. MongoDB Atlas
+
+1. Crear un cluster **M0** gratuito.
+2. Crear un usuario de base de datos con contraseña fuerte.
+3. En *Network Access*, permitir el acceso desde Render. Render usa IPs de salida dinámicas en el
+   plan gratuito, así que para empezar se usa `0.0.0.0/0` (con contraseña fuerte y sin exponer la
+   URI). En un plan pago se pueden restringir las IPs estáticas de Render.
+4. Copiar la cadena `mongodb+srv://.../matiapp?retryWrites=true&w=majority`.
+
+### 2. API en Render
+
+El repo incluye [`render.yaml`](../render.yaml). En Render:
+
+1. *New* → *Blueprint* → conectar el repositorio.
+2. Render detecta el blueprint y crea `matiapp-api`.
+3. Completar las variables que pide (`sync: false`):
+   - `MONGODB_URI`: la URI de Atlas.
+   - `CORS_ORIGINS`: `https://TU-SITIO.netlify.app` (sin barra final; agregar el dominio propio si
+     existe, separado por coma).
+   - `ADMIN_PASSWORD`: contraseña inicial del administrador.
+4. Verificar las variables fijas del blueprint:
+   - `NODE_ENV=production`
+   - `COOKIE_SAMESITE=none` (Netlify y Render son dominios distintos)
+   - `JWT_ACCESS_SECRET` y `JWT_REFRESH_SECRET` generados por Render.
+5. Deploy. La URL queda como `https://matiapp-api.onrender.com`.
+6. Probar `https://matiapp-api.onrender.com/api/health`.
+
+> **Una sola instancia.** El bus de tiempo real es en memoria. Si se escalan varias instancias, el
+> panel en vivo deja de recibir todos los eventos; para eso habría que agregar un adaptador Redis.
+>
+> El plan gratuito de Render se suspende por inactividad: la primera request puede tardar y los
+> sockets se reconectan. Para uso real en la garita, usar un plan pago.
+
+### 3. Frontend en Netlify
+
+El repo incluye [`netlify.toml`](../netlify.toml):
+
+- Build: `npm ci && npm run build:web:netlify`
+- Publish: `apps/web/dist/web/browser`
+- Redirección SPA para `/buscar`, `/propietarios`, `/visita/nueva`, etc.
+- Headers de seguridad y `Cache-Control` para `config.js`, `index.html` y el service worker.
+
+En Netlify:
+
+1. *Add new site* → *Import an existing project* → conectar el repositorio.
+2. Dejar la **base directory vacía** (raíz del monorepo). Netlify toma el build y el publish de
+   `netlify.toml`.
+3. En *Site configuration* → *Environment variables*, agregar:
+   - `MATIAPP_API_URL=https://matiapp-api.onrender.com`
+4. Deploy. El build escribe `config.js` con esa URL; si falta la variable, el build falla a propósito
+   para no publicar un PWA apuntando a Netlify.
+5. Abrir `https://TU-SITIO.netlify.app`, ingresar con el admin y elegir/crear el barrio.
+
+> Si usás un dominio propio, agregalo en Netlify y después sumalo a `CORS_ORIGINS` en Render
+> (`https://app.tudominio.com`). Redeploy de la API para tomar el cambio.
+>
+> Los *deploy previews* de Netlify tienen otra URL. Si los necesitás, agregá esa URL a
+> `CORS_ORIGINS` o probá siempre contra el dominio principal.
+
+### 4. Checklist de conexión
+
+- [ ] `GET https://matiapp-api.onrender.com/api/health` responde OK.
+- [ ] `CORS_ORIGINS` incluye exactamente el origen del PWA (sin `/` final).
+- [ ] `COOKIE_SAMESITE=none` y `NODE_ENV=production` en Render.
+- [ ] `MATIAPP_API_URL` apunta a la API y se redeployó Netlify después de cambiarla.
+- [ ] Login, refresh y `PUT /api/auth/barrio` funcionan desde el dominio de Netlify.
+- [ ] Cámara habilitada (HTTPS) en el celular.
+
+### Netlify CLI (alternativa)
+
+```bash
+npm i -g netlify-cli
+netlify login
+netlify init                 # vincular el repo
+netlify env:set MATIAPP_API_URL https://matiapp-api.onrender.com
+netlify deploy --build --prod
+```
 
 ## Build de producción
 
 ```bash
-npm run build            # build de todo
-npm run build -w packages/shared
-npm run build -w apps/api
-npm run build -w apps/web
+npm run build                  # shared + API + web (config.js queda en mismo origen)
+npm run build:web:netlify      # shared + config.js desde MATIAPP_API_URL + web
+npm run build -w @victoriasapp/shared
+npm run build -w @victoriasapp/api
+npm run build -w @victoriasapp/web
+```
+
+Para probar un build local apuntando a la API local:
+
+```bash
+# PowerShell
+$env:MATIAPP_API_URL='http://localhost:3000'
+npm run build:web:netlify
+Remove-Item Env:MATIAPP_API_URL
+npm run config -w @victoriasapp/web   # restaurar config.js a mismo origen
 ```
 
 ## Checklist de despliegue
@@ -141,7 +246,10 @@ npm run build -w apps/web
 - [ ] `.env` cargado en el servidor (no en el repo).
 - [ ] Mongo accesible y con backup.
 - [ ] HTTPS con certificado válido.
-- [ ] CORS apuntando al dominio real.
+- [ ] `CORS_ORIGINS` apuntando al dominio real del PWA.
+- [ ] `COOKIE_SAMESITE=none` si el PWA y la API están en dominios distintos.
 - [ ] `NODE_ENV=production`.
+- [ ] Una sola instancia de API (o adaptador Redis para tiempo real).
 - [ ] PWA servida por HTTPS y con el service worker activo.
+- [ ] `config.js` con la API correcta y sin cachear.
 - [ ] Verificado el acceso a cámara desde el celular.

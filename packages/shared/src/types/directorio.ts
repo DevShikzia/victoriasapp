@@ -55,10 +55,14 @@ export interface FamiliarLocal {
 
 export interface VehiculoLocal {
   readonly uuid: string;
-  readonly patente: string;
+  /** Patente normalizada; `null` cuando el vehículo no tiene patente cargada. */
+  readonly patente: string | null;
   readonly marca: string | null;
   readonly modelo: string | null;
   readonly color: string | null;
+  /** Personas del lote que usan el vehículo (propietarios y familiares). */
+  readonly usuariosNombres: readonly string[];
+  /** Primer usuario, para el autocompletado de visitas. */
   readonly propietarioNombre: string | null;
   readonly loteNumero: string | null;
   readonly actualizadoEn: string;
@@ -112,6 +116,16 @@ export const esquemaPatente = z
   .transform((valor) => normalizarPatente(valor))
   .refine((valor) => RE_PATENTE.test(valor), 'Patente inválida');
 
+/**
+ * Patente opcional: vacía o `null` se guarda como `null`; si viene con valor se
+ * normaliza y valida igual que la obligatoria.
+ */
+export const esquemaPatenteOpcional = z
+  .union([z.string(), z.null()])
+  .transform((valor) => (valor === null ? '' : normalizarPatente(valor)))
+  .refine((valor) => valor === '' || RE_PATENTE.test(valor), 'Patente inválida')
+  .transform((valor): string | null => (valor === '' ? null : valor));
+
 const textoOpcional = (max: number): z.ZodNullable<z.ZodString> =>
   z.string().trim().max(max).nullable();
 const uuidCliente = z.string().trim().min(1).max(80);
@@ -142,6 +156,8 @@ export const esquemaActualizarBarrio = z.object({
 export type ActualizarBarrio = z.infer<typeof esquemaActualizarBarrio>;
 
 const idReferencia = z.string().trim().min(1).nullable();
+/** Lista de ids de referencia (por ejemplo, los usuarios de un vehículo). */
+const idsReferencia = z.array(z.string().trim().min(1)).max(100);
 
 /** Lote / parcela. */
 export interface LoteDto {
@@ -255,38 +271,42 @@ export type ActualizarFamiliar = z.infer<typeof esquemaActualizarFamiliar>;
 export interface VehiculoDto {
   readonly id: string;
   readonly uuid: string;
-  readonly patente: string;
+  /** Patente normalizada; `null` cuando el vehículo no tiene patente. */
+  readonly patente: string | null;
   readonly marca: string | null;
   readonly modelo: string | null;
   readonly color: string | null;
-  readonly propietarioId: string | null;
-  readonly familiarId: string | null;
+  /** Lote al que está asociado el vehículo. */
   readonly loteId: string | null;
+  /** Propietarios del lote que suelen usar el vehículo. */
+  readonly propietarioIds: readonly string[];
+  /** Familiares del lote que suelen usar el vehículo. */
+  readonly familiarIds: readonly string[];
   readonly descripcion: string | null;
   readonly actualizadoEn: string;
 }
 
 export const esquemaCrearVehiculo = z.object({
   uuid: uuidCliente.optional(),
-  patente: esquemaPatente,
+  patente: esquemaPatenteOpcional.default(null),
   marca: textoOpcional(60).default(null),
   modelo: textoOpcional(60).default(null),
   color: textoOpcional(40).default(null),
-  propietarioId: idReferencia.default(null),
-  familiarId: idReferencia.default(null),
   loteId: idReferencia.default(null),
+  propietarioIds: idsReferencia.default([]),
+  familiarIds: idsReferencia.default([]),
   descripcion: textoOpcional(400).default(null),
 });
 export type CrearVehiculo = z.infer<typeof esquemaCrearVehiculo>;
 
 export const esquemaActualizarVehiculo = z.object({
-  patente: esquemaPatente.optional(),
+  patente: esquemaPatenteOpcional.optional(),
   marca: textoOpcional(60).optional(),
   modelo: textoOpcional(60).optional(),
   color: textoOpcional(40).optional(),
-  propietarioId: idReferencia.optional(),
-  familiarId: idReferencia.optional(),
   loteId: idReferencia.optional(),
+  propietarioIds: idsReferencia.optional(),
+  familiarIds: idsReferencia.optional(),
   descripcion: textoOpcional(400).optional(),
 });
 export type ActualizarVehiculo = z.infer<typeof esquemaActualizarVehiculo>;

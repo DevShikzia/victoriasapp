@@ -49,6 +49,13 @@
       <button type="button" class="boton boton--suave" (click)="nuevo()">Limpiar</button>
     </div>
 
+    @if (entidad() === 'lote') {
+      <p class="ayuda">
+        Los propietarios se asignan desde la pestaña <b>Propietarios</b>. Al elegirles un lote,
+        aparecen automáticamente acá ordenados por jerarquía (señor, señora, …).
+      </p>
+    }
+
     <div class="campos">
       @for (campo of campos(); track campo.clave) {
         <label class="campo">
@@ -72,16 +79,31 @@
                 (ngModelChange)="actualizarCampo(campo.clave, $event)"
               >
                 <option value="">—</option>
-                @if (campo.opciones; as opcionesFijas) {
-                  @for (opcion of opcionesFijas; track opcion.valor) {
-                    <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
-                  }
-                } @else {
-                  @for (opcion of opciones(campo); track opcion.id) {
-                    <option [value]="opcion.id">{{ etiquetaOpcionDe(campo, opcion) }}</option>
-                  }
+                @for (opcion of opciones(campo); track opcion.valor) {
+                  <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
                 }
               </select>
+            }
+            @case ('multiseleccion') {
+              <select
+                multiple
+                [ngModel]="valorModelo(campo.clave)"
+                (ngModelChange)="actualizarCampo(campo.clave, $event)"
+                [disabled]="campo.opcionesDeLote === true && valorModelo('loteId') === ''"
+              >
+                @for (opcion of opciones(campo); track opcion.valor) {
+                  <option [value]="opcion.valor">{{ opcion.etiqueta }}</option>
+                }
+              </select>
+              @if (campo.opcionesDeLote === true && valorModelo('loteId') === '') {
+                <small class="ayuda"
+                  >Elegí primero un lote para ver sus propietarios y familiares.</small
+                >
+              } @else if (opciones(campo).length === 0) {
+                <small class="ayuda">
+                  Ese lote no tiene propietarios ni familiares cargados.
+                </small>
+              }
             }
             @default {
               <input

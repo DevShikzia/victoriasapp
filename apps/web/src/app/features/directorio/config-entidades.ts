@@ -10,12 +10,14 @@ import type { EntidadDirectorio } from '@victoriasapp/shared';
 export interface CampoEntidad {
   readonly clave: string;
   readonly etiqueta: string;
-  readonly tipo: 'texto' | 'booleano' | 'seleccion';
+  readonly tipo: 'texto' | 'booleano' | 'seleccion' | 'multiseleccion';
   readonly requerido?: boolean;
   /** Para `seleccion`: de qué entidad salen las opciones. */
   readonly fuente?: EntidadDirectorio;
   /** Para `seleccion` con valores fijos (por ejemplo, el tratamiento). */
   readonly opciones?: readonly { readonly valor: string; readonly etiqueta: string }[];
+  /** Para `multiseleccion`: arma las opciones con los usuarios del lote elegido. */
+  readonly opcionesDeLote?: boolean;
 }
 
 /** Columna del listado. */
@@ -64,12 +66,11 @@ export const CONFIG_ENTIDADES: Readonly<Record<EntidadDirectorio, ConfigEntidad>
       { clave: 'numero', etiqueta: 'Número' },
       { clave: 'calle', etiqueta: 'Calle' },
       { clave: 'barrioId', etiqueta: 'Barrio', fuente: 'barrio' },
-      { clave: 'propietarioId', etiqueta: 'Propietario', fuente: 'propietario' },
+      { clave: 'propietarios', etiqueta: 'Propietarios' },
     ],
     campos: [
       { clave: 'numero', etiqueta: 'Número', tipo: 'texto', requerido: true },
       { clave: 'barrioId', etiqueta: 'Barrio', tipo: 'seleccion', fuente: 'barrio' },
-      { clave: 'propietarioId', etiqueta: 'Propietario', tipo: 'seleccion', fuente: 'propietario' },
       { clave: 'calle', etiqueta: 'Calle', tipo: 'texto' },
       { clave: 'notas', etiqueta: 'Notas', tipo: 'texto' },
     ],
@@ -135,14 +136,18 @@ export const CONFIG_ENTIDADES: Readonly<Record<EntidadDirectorio, ConfigEntidad>
       { clave: 'patente', etiqueta: 'Patente' },
       { clave: 'marca', etiqueta: 'Marca' },
       { clave: 'modelo', etiqueta: 'Modelo' },
-      { clave: 'propietarioId', etiqueta: 'Propietario', fuente: 'propietario' },
       { clave: 'loteId', etiqueta: 'Lote', fuente: 'lote' },
+      { clave: 'usuarios', etiqueta: 'Usuarios' },
     ],
     campos: [
-      { clave: 'patente', etiqueta: 'Patente', tipo: 'texto', requerido: true },
-      { clave: 'propietarioId', etiqueta: 'Propietario', tipo: 'seleccion', fuente: 'propietario' },
-      { clave: 'familiarId', etiqueta: 'Familiar', tipo: 'seleccion', fuente: 'familiar' },
       { clave: 'loteId', etiqueta: 'Lote', tipo: 'seleccion', fuente: 'lote' },
+      {
+        clave: 'usuarios',
+        etiqueta: 'Usuarios del vehículo',
+        tipo: 'multiseleccion',
+        opcionesDeLote: true,
+      },
+      { clave: 'patente', etiqueta: 'Patente', tipo: 'texto' },
       { clave: 'marca', etiqueta: 'Marca', tipo: 'texto' },
       { clave: 'modelo', etiqueta: 'Modelo', tipo: 'texto' },
       { clave: 'color', etiqueta: 'Color', tipo: 'texto' },

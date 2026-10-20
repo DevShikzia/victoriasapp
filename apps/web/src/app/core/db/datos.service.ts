@@ -18,11 +18,27 @@ import {
   normalizarParaBusqueda,
   normalizarPatente,
   ordenarPorCoincidencia,
+  rangoTratamiento,
 } from '@victoriasapp/shared';
 
 import { RESULTADOS_VACIOS, type ResultadosGlobales } from '../busqueda/tipos';
 import { obtenerBaseLocal } from './base-local';
 import { datosDeEjemplo } from './seed';
+
+/** Ordena titulares de un lote: señor, señora y luego por apellido/nombre. */
+function compararPropietariosPorJerarquia(a: PropietarioLocal, b: PropietarioLocal): number {
+  const porTratamiento = rangoTratamiento(a.tratamiento) - rangoTratamiento(b.tratamiento);
+  if (porTratamiento !== 0) {
+    return porTratamiento;
+  }
+  const porApellido = a.apellido.localeCompare(b.apellido, 'es', {
+    sensitivity: 'base',
+    numeric: true,
+  });
+  return porApellido !== 0
+    ? porApellido
+    : a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base', numeric: true });
+}
 
 /**
  * Acceso a los datos locales del PWA (IndexedDB) y operaciones de negocio
@@ -229,6 +245,7 @@ export class DatosService {
     return ordenarPorCoincidencia(vehiculos, q, (v) => [
       v.patente,
       v.propietarioNombre,
+      ...v.usuariosNombres,
       v.marca,
       v.modelo,
       v.loteNumero,
@@ -327,7 +344,9 @@ export class DatosService {
     }
 
     const propietarios = await this.db.propietarios.toArray();
-    return propietarios.filter((p) => (p.loteNumero ?? '').trim() === lote);
+    return propietarios
+      .filter((p) => (p.loteNumero ?? '').trim() === lote)
+      .sort(compararPropietariosPorJerarquia);
   }
 
   async propietarioPorNombre(nombre: string): Promise<PropietarioLocal | undefined> {

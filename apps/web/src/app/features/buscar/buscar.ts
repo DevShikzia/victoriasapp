@@ -112,6 +112,17 @@ export class Buscar {
       .join(' ');
   }
 
+  protected tituloVehiculo(vehiculo: VehiculoLocal): string {
+    const patente = vehiculo.patente?.trim() ?? '';
+    if (patente !== '') {
+      return patente;
+    }
+    const descripcion = [vehiculo.marca, vehiculo.modelo]
+      .filter((parte): parte is string => parte !== null && parte !== '')
+      .join(' ');
+    return descripcion === '' ? 'Vehículo sin patente' : descripcion;
+  }
+
   private programar(valor: string): void {
     this.cancelarTemporizador();
     const limpio = valor.trim();

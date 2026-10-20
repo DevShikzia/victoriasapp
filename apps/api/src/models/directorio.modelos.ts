@@ -68,13 +68,22 @@ export interface Familiar {
 
 export interface Vehiculo {
   uuid: string;
-  patente: string;
+  patente: string | null;
   marca: string | null;
   modelo: string | null;
   color: string | null;
+  /** Lote al que está asociado el vehículo. */
+  loteId: Types.ObjectId | null;
+  /** Propietarios del lote que usan el vehículo. */
+  propietarioIds: Types.ObjectId[];
+  /** Familiares del lote que usan el vehículo. */
+  familiarIds: Types.ObjectId[];
+  /**
+   * Referencias singulares heredadas. Se mantienen para leer datos viejos; las
+   * listas `propietarioIds` y `familiarIds` son la fuente de verdad.
+   */
   propietarioId: Types.ObjectId | null;
   familiarId: Types.ObjectId | null;
-  loteId: Types.ObjectId | null;
   descripcion: string | null;
   activo: boolean;
   createdAt: Date;
@@ -150,18 +159,36 @@ familiarSchema.index({ propietarioId: 1 });
 const vehiculoSchema = new Schema<Vehiculo>(
   {
     uuid: { type: String, required: true, unique: true, trim: true },
-    patente: { type: String, required: true, unique: true, trim: true, uppercase: true },
+    patente: { type: String, default: null, trim: true, uppercase: true },
     marca: { type: String, default: null, trim: true },
     modelo: { type: String, default: null, trim: true },
     color: { type: String, default: null, trim: true },
+    loteId: { type: Schema.Types.ObjectId, ref: 'Lote', default: null },
+    propietarioIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'Propietario' }],
+      default: [],
+    },
+    familiarIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'Familiar' }],
+      default: [],
+    },
     propietarioId: { type: Schema.Types.ObjectId, ref: 'Propietario', default: null },
     familiarId: { type: Schema.Types.ObjectId, ref: 'Familiar', default: null },
-    loteId: { type: Schema.Types.ObjectId, ref: 'Lote', default: null },
     descripcion: { type: String, default: null, trim: true },
     activo: { type: Boolean, default: true },
   },
   opciones,
 );
+// La patente es opcional, pero si existe no puede repetirse. El índice parcial
+// excluye los documentos sin patente (`null`); `sparse` no sirve porque el campo
+// existe con valor nulo y sólo se permitiría un vehículo sin patente.
+vehiculoSchema.index(
+  { patente: 1 },
+  { unique: true, partialFilterExpression: { patente: { $type: 'string' } } },
+);
+vehiculoSchema.index({ loteId: 1 });
+vehiculoSchema.index({ propietarioIds: 1 });
+vehiculoSchema.index({ familiarIds: 1 });
 vehiculoSchema.index({ propietarioId: 1 });
 
 const eliminadoSchema = new Schema<Eliminado>(

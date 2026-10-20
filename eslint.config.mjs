@@ -13,6 +13,7 @@ export default tseslint.config(
       '**/.angular/**',
       '**/*.mjs',
       '**/*.config.js',
+      '**/public/config.js',
     ],
   },
   eslint.configs.recommended,

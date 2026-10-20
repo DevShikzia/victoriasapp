@@ -5,23 +5,39 @@
  * Ver docs/15-buscador-global-y-rediseno-mobile.md.
  */
 :root {
-  /* Paleta */
-  --acento: #14532d;
-  --acento-claro: #1f7a44;
-  --acento-suave: #e7f5ec;
-  --fondo: #f2f5f3;
+  /* Paleta MatiApp: índigo profundo, violeta y acentos suaves */
+  --marca-1: #312e81;
+  --marca-2: #4f46e5;
+  --marca-3: #8b5cf6;
+  --degradado-marca: linear-gradient(135deg, #312e81 0%, #4f46e5 55%, #8b5cf6 100%);
+  --degradado-suave: linear-gradient(135deg, #eef2ff 0%, #f5f3ff 55%, #fdf2f8 100%);
+
+  --acento: #4338ca;
+  --acento-claro: #5b4bdb;
+  --acento-suave: #ecebff;
+  --acento-borde: #c7c2f8;
+  --fondo: #f7f6fb;
   --superficie: #ffffff;
-  --superficie-2: #f7faf8;
-  --borde: #dde5e0;
-  --texto: #14211a;
-  --texto-suave: #5b6b62;
+  --superficie-2: #fbfaff;
+  --borde: #e5e2f0;
+  --texto: #1f1b2e;
+  --texto-suave: #6b647d;
   --texto-inverso: #ffffff;
-  --alerta: #b45309;
-  --alerta-suave: #fef3c7;
-  --peligro: #b91c1c;
-  --peligro-suave: #fee2e2;
-  --info: #1d4ed8;
-  --info-suave: #dbeafe;
+  --alerta: #9a5b06;
+  --alerta-suave: #fff6e0;
+  --alerta-borde: #f2d18c;
+  --peligro: #b4234a;
+  --peligro-suave: #ffe9f0;
+  --peligro-borde: #f7b8c8;
+  --info: #1d5fd1;
+  --info-suave: #e8f1ff;
+  --info-borde: #b9d3fb;
+  --exito: #0f7a58;
+  --exito-suave: #e4f8f0;
+  --exito-borde: #a9e4cf;
+  --violeta: #7c3aed;
+  --violeta-suave: #f1e9ff;
+  --violeta-borde: #d8c4fb;
 
   /* Espaciado */
   --esp-1: 0.25rem;
@@ -36,9 +52,9 @@
   --radio: 0.75rem;
   --radio-lg: 1.125rem;
   --radio-pill: 999px;
-  --sombra-1: 0 1px 2px rgb(20 33 26 / 6%);
-  --sombra-2: 0 6px 18px rgb(20 33 26 / 12%);
-  --sombra-3: 0 -8px 30px rgb(20 33 26 / 18%);
+  --sombra-1: 0 1px 2px rgb(31 27 46 / 6%);
+  --sombra-2: 0 10px 30px rgb(49 46 129 / 12%);
+  --sombra-3: 0 -10px 40px rgb(31 27 46 / 16%);
 
   /* Layout */
   --tap: 44px;
@@ -60,6 +76,7 @@ body {
 }
 
 body {
+  min-height: 100dvh;
   font-family:
     system-ui,
     -apple-system,
@@ -67,7 +84,11 @@ body {
     Roboto,
     sans-serif;
   color: var(--texto);
-  background: var(--fondo);
+  background-color: var(--fondo);
+  background-image:
+    radial-gradient(50rem 26rem at 100% -8%, rgb(139 92 246 / 12%), transparent 65%),
+    radial-gradient(42rem 24rem at -10% 10%, rgb(56 189 248 / 9%), transparent 60%);
+  background-attachment: fixed;
   line-height: 1.45;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
@@ -148,8 +169,9 @@ button {
 }
 
 .boton--acento {
-  background: var(--acento);
+  background: var(--degradado-marca);
   color: var(--texto-inverso);
+  box-shadow: 0 6px 16px rgb(67 56 202 / 22%);
 }
 
 .boton--suave {
@@ -159,7 +181,7 @@ button {
 
 .boton--peligro {
   background: var(--peligro-suave);
-  border-color: #fecaca;
+  border-color: var(--peligro-borde);
   color: var(--peligro);
 }
 

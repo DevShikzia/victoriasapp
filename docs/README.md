@@ -1,4 +1,4 @@
-# Documentación — victoriasapp
+# Documentación — MatiApp
 
 Índice de la documentación del proyecto. Los documentos están numerados en el orden recomendado
 de lectura.

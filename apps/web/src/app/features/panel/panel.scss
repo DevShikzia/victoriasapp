@@ -41,7 +41,7 @@
     background: var(--peligro);
 
     &--on {
-      background: #2f9e44;
+      background: var(--exito);
     }
   }
 }
@@ -93,8 +93,8 @@
   text-align: center;
 
   &--alerta {
-    border-color: #f0b429;
-    background: #fffaf0;
+    border-color: var(--alerta-borde);
+    background: var(--alerta-suave);
   }
 
   .numero {
@@ -122,7 +122,7 @@
   font-size: 0.85rem;
 
   &--error {
-    border-color: #fecaca;
+    border-color: var(--peligro-borde);
     background: var(--peligro-suave);
     color: var(--peligro);
   }
@@ -197,15 +197,15 @@ th {
   font-weight: 600;
 
   &--red {
-    border-color: #b9e0c7;
-    background: var(--acento-suave);
-    color: var(--acento);
+    border-color: var(--exito-borde);
+    background: var(--exito-suave);
+    color: var(--exito);
   }
 
   &--dentro {
-    border-color: #b9e0c7;
-    background: var(--acento-suave);
-    color: var(--acento);
+    border-color: var(--exito-borde);
+    background: var(--exito-suave);
+    color: var(--exito);
   }
 }
 

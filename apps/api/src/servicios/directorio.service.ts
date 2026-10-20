@@ -14,7 +14,11 @@ import type {
   VehiculoDto,
   VehiculoLocal,
 } from '@victoriasapp/shared';
-import { dividirNombreCompleto, parsearCsvDirectorio } from '@victoriasapp/shared';
+import {
+  dividirNombreCompleto,
+  parsearCsvDirectorio,
+  rangoTratamiento,
+} from '@victoriasapp/shared';
 import type { HydratedDocument, Types } from 'mongoose';
 
 import { errorNoEncontrado } from '../lib/errores.js';
@@ -110,12 +114,70 @@ export function aVehiculoDto(doc: VehiculoDoc): VehiculoDto {
     marca: doc.marca,
     modelo: doc.modelo,
     color: doc.color,
-    propietarioId: idONull(doc.propietarioId),
-    familiarId: idONull(doc.familiarId),
     loteId: idONull(doc.loteId),
+    propietarioIds: doc.propietarioIds.map((id) => id.toString()),
+    familiarIds: doc.familiarIds.map((id) => id.toString()),
     descripcion: doc.descripcion,
     actualizadoEn: doc.updatedAt.toISOString(),
   };
+}
+
+/**
+ * Orden jerárquico de los titulares de un lote: primero el señor, después la
+ * señora y, a igualdad de tratamiento, por apellido y nombre.
+ */
+function compararPropietarios(a: PropietarioDoc, b: PropietarioDoc): number {
+  const porTratamiento = rangoTratamiento(a.tratamiento) - rangoTratamiento(b.tratamiento);
+  if (porTratamiento !== 0) {
+    return porTratamiento;
+  }
+  const porApellido = a.apellido.localeCompare(b.apellido, 'es', {
+    sensitivity: 'base',
+    numeric: true,
+  });
+  return porApellido !== 0
+    ? porApellido
+    : a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base', numeric: true });
+}
+
+/**
+ * Recalcula el titular principal (`Lote.propietarioId`) de todos los lotes del
+ * barrio a partir de los propietarios asignados. La fuente de verdad es
+ * `Propietario.loteId`; el espejo del lote queda ordenado por jerarquía para
+ * que los consumidores viejos y el pull offline vean siempre al señor primero.
+ *
+ * Se llama después de crear/editar/borrar propietarios y al terminar una
+ * importación, así no hay que repetir esta lógica en cada ruta.
+ */
+export async function recalcularTitularesDeBarrio(barrioId: Types.ObjectId): Promise<void> {
+  const lotes = await LoteModel.find({ barrioId });
+  if (lotes.length === 0) {
+    return;
+  }
+
+  const loteIds = lotes.map((lote) => lote._id);
+  const propietarios = await PropietarioModel.find({ loteId: { $in: loteIds } });
+  const porLote = new Map<string, PropietarioDoc[]>();
+  for (const propietario of propietarios) {
+    if (propietario.loteId === null) {
+      continue;
+    }
+    const clave = propietario.loteId.toString();
+    const lista = porLote.get(clave) ?? [];
+    lista.push(propietario);
+    porLote.set(clave, lista);
+  }
+
+  for (const lote of lotes) {
+    const titulares = porLote.get(lote._id.toString()) ?? [];
+    titulares.sort(compararPropietarios);
+    const principal = titulares[0]?._id ?? null;
+    if (idONull(lote.propietarioId) === idONull(principal)) {
+      continue;
+    }
+    // `updateOne` respeta `timestamps`, así el pull incremental incluye el lote.
+    await LoteModel.updateOne({ _id: lote._id }, { $set: { propietarioId: principal } });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -157,6 +219,9 @@ export async function pullDirectorio(
     VehiculoModel.find({
       $or: [
         { loteId: { $in: loteIds } },
+        { propietarioIds: { $in: propietarioIds } },
+        { familiarIds: { $in: familiarIds } },
+        // Datos viejos con una sola referencia.
         { propietarioId: { $in: propietarioIds } },
         { familiarId: { $in: familiarIds } },
       ],
@@ -172,15 +237,18 @@ export async function pullDirectorio(
   );
   const lotesPorId = new Map<string, LoteDoc>(lotes.map((doc) => [doc._id.toString(), doc]));
 
-  const titularesPorLote = new Map<string, string[]>();
+  const titularesPorLote = new Map<string, PropietarioDoc[]>();
   for (const doc of propietarios) {
     if (doc.loteId === null) {
       continue;
     }
     const clave = doc.loteId.toString();
     const lista = titularesPorLote.get(clave) ?? [];
-    lista.push(nombreCompleto(doc));
+    lista.push(doc);
     titularesPorLote.set(clave, lista);
+  }
+  for (const lista of titularesPorLote.values()) {
+    lista.sort(compararPropietarios);
   }
 
   const cambio = (doc: { updatedAt: Date }): boolean =>
@@ -194,7 +262,7 @@ export async function pullDirectorio(
         : (propietariosPorId.get(doc.propietarioId.toString()) ?? null);
     const propietarioNombre =
       titulares.length > 0
-        ? titulares.join(' / ')
+        ? titulares.map(nombreCompleto).join(' / ')
         : principal === null
           ? null
           : nombreCompleto(principal);
@@ -240,24 +308,35 @@ export async function pullDirectorio(
   };
 
   const aVehiculoLocal = (doc: VehiculoDoc): VehiculoLocal => {
+    // Soportamos documentos nuevos (listas) y viejos (referencia singular).
+    const propietarios = (
+      doc.propietarioIds.length
+        ? doc.propietarioIds
+        : doc.propietarioId === null
+          ? []
+          : [doc.propietarioId]
+    )
+      .map((id) => propietariosPorId.get(id.toString()) ?? null)
+      .filter((propietario): propietario is PropietarioDoc => propietario !== null)
+      .sort(compararPropietarios);
+    const familiares = (
+      doc.familiarIds.length ? doc.familiarIds : doc.familiarId === null ? [] : [doc.familiarId]
+    )
+      .map((id) => familiaresPorId.get(id.toString()) ?? null)
+      .filter((familiar): familiar is FamiliarDoc => familiar !== null);
+
+    const usuariosNombres = [
+      ...propietarios.map(nombreCompleto),
+      ...familiares.map((familiar) => familiar.nombre),
+    ];
+    const propietarioDelFamiliar = familiares[0]?.propietarioId;
     const propietario =
-      doc.propietarioId === null
+      propietarios[0] ??
+      (propietarioDelFamiliar === null || propietarioDelFamiliar === undefined
         ? null
-        : (propietariosPorId.get(doc.propietarioId.toString()) ?? null);
-    const familiar =
-      doc.familiarId === null ? null : (familiaresPorId.get(doc.familiarId.toString()) ?? null);
-    const propietarioIdFamiliar = familiar?.propietarioId ?? null;
-    const propietarioDeFamiliar =
-      propietarioIdFamiliar === null
-        ? null
-        : (propietariosPorId.get(propietarioIdFamiliar.toString()) ?? null);
-    const nombre =
-      propietario !== null
-        ? nombreCompleto(propietario)
-        : propietarioDeFamiliar === null
-          ? null
-          : nombreCompleto(propietarioDeFamiliar);
-    const loteId = doc.loteId ?? propietario?.loteId ?? familiar?.loteId ?? null;
+        : (propietariosPorId.get(propietarioDelFamiliar.toString()) ?? null));
+    const loteId =
+      doc.loteId ?? propietarios[0]?.loteId ?? familiares[0]?.loteId ?? propietario?.loteId ?? null;
     const lote = loteId === null ? null : (lotesPorId.get(loteId.toString()) ?? null);
     return {
       uuid: doc.uuid,
@@ -265,7 +344,8 @@ export async function pullDirectorio(
       marca: doc.marca,
       modelo: doc.modelo,
       color: doc.color,
-      propietarioNombre: nombre,
+      usuariosNombres,
+      propietarioNombre: usuariosNombres[0] ?? null,
       loteNumero: lote?.numero ?? null,
       actualizadoEn: doc.updatedAt.toISOString(),
     };
@@ -308,16 +388,22 @@ async function asegurarVehiculo(
     await VehiculoModel.create({
       uuid: randomUUID(),
       patente,
+      loteId,
+      propietarioIds: [propietarioId],
+      familiarIds: [],
       propietarioId,
       familiarId: null,
-      loteId,
       descripcion,
       activo: true,
     });
     return;
   }
   let cambio = false;
-  if (existente.propietarioId?.toString() !== propietarioId.toString()) {
+  if (!existente.propietarioIds.some((id) => id.equals(propietarioId))) {
+    existente.propietarioIds = [...existente.propietarioIds, propietarioId];
+    cambio = true;
+  }
+  if (existente.propietarioId === null) {
     existente.propietarioId = propietarioId;
     cambio = true;
   }
@@ -436,11 +522,6 @@ export async function importarDirectorio(
         actualizados += 1;
       }
 
-      if (lote.propietarioId === null) {
-        lote.propietarioId = propietario._id;
-        await lote.save();
-      }
-
       if (fila.patente !== null) {
         await asegurarVehiculo(fila.patente, propietario._id, lote._id, fila.descripcion);
       }
@@ -455,6 +536,10 @@ export async function importarDirectorio(
       });
     }
   }
+
+  // Los lotes pueden haber quedado con varios titulares: dejamos el espejo
+  // `propietarioId` ordenado por jerarquía (señor, señora, …).
+  await recalcularTitularesDeBarrio(barrio._id);
 
   return {
     barrio: barrio.nombre,

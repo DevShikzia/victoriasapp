@@ -108,16 +108,19 @@ export class BuscadorService {
       this.datos.familiaresRelacionados(vehiculo.propietarioNombre, vehiculo.loteNumero),
       this.datos.vehiculosRelacionados(vehiculo.propietarioNombre, vehiculo.loteNumero),
     ]);
+    const titulo =
+      texto(vehiculo.patente) ?? unir([vehiculo.marca, vehiculo.modelo]) ?? 'Vehículo sin patente';
 
     return {
       tipo: 'vehiculo',
-      titulo: vehiculo.patente,
+      titulo,
       subtitulo: unir([vehiculo.marca, vehiculo.modelo]),
       filas: this.filas([
+        ['Patente', vehiculo.patente],
         ['Marca', vehiculo.marca],
         ['Modelo', vehiculo.modelo],
         ['Color', vehiculo.color],
-        ['Propietario', vehiculo.propietarioNombre],
+        ['Usuarios', unir(vehiculo.usuariosNombres)],
         ['Lote', vehiculo.loteNumero],
       ]),
       propietarios,

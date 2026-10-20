@@ -17,6 +17,12 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET debe tener al menos 32 caracteres'),
   CORS_ORIGINS: z.string().default('http://localhost:4200'),
 
+  /**
+   * `strict` sirve cuando el PWA y la API comparten sitio (o en desarrollo).
+   * Con Netlify + Render son dominios distintos: usar `none` (exige HTTPS).
+   */
+  COOKIE_SAMESITE: z.enum(['strict', 'lax', 'none']).default('strict'),
+
   /** Vida de los tokens, en segundos. */
   ACCESS_TOKEN_SEGUNDOS: z.coerce
     .number()

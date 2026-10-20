@@ -11,9 +11,9 @@
   gap: var(--esp-2);
   height: var(--barra-alto);
   padding: 0 var(--esp-4);
-  background: var(--acento);
+  background: var(--degradado-marca);
   color: var(--texto-inverso);
-  box-shadow: var(--sombra-1);
+  box-shadow: 0 2px 14px rgb(49 46 129 / 22%);
 }
 
 .marca {
@@ -62,15 +62,15 @@
 }
 
 .punto--on {
-  background: #5ee08a;
+  background: #6ee7b7;
 }
 
 .punto--off {
-  background: #f0b429;
+  background: #fbbf24;
 }
 
 .estado--offline {
-  color: #ffe1a8;
+  color: #fde68a;
 }
 
 .pendientes {
@@ -108,9 +108,9 @@
   right: 2px;
   width: 10px;
   height: 10px;
-  border: 2px solid var(--acento);
+  border: 2px solid var(--marca-1);
   border-radius: 50%;
-  background: #f0b429;
+  background: #fbbf24;
 }
 
 /* La navegación de escritorio se oculta en el celular. */
@@ -177,12 +177,12 @@
   height: 36px;
   margin-top: -14px;
   border-radius: 50%;
-  background: var(--acento);
+  background: var(--degradado-marca);
   color: var(--texto-inverso);
   font-size: 1.5rem;
   font-weight: 400;
   line-height: 1;
-  box-shadow: var(--sombra-2);
+  box-shadow: 0 8px 20px rgb(67 56 202 / 35%);
 }
 
 /* --------------------------------------------------------------------------
@@ -193,7 +193,7 @@
   position: fixed;
   inset: 0;
   z-index: 34;
-  background: rgb(10 20 14 / 35%);
+  background: rgb(20 16 40 / 42%);
   animation: aparecer-menu 140ms ease-out;
 }
 

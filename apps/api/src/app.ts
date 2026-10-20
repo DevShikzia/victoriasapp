@@ -37,6 +37,11 @@ function limitadorAuth(env: Env): RequestHandler {
 export function crearApp(env: Env): Express {
   const app = express();
   app.disable('x-powered-by');
+  // Render/Netlify están detrás de un proxy: necesitamos la IP real para el
+  // rate limit y las cookies `Secure`.
+  if (env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+  }
 
   app.use(helmet());
   app.use(cors({ origin: origenesCors(env), credentials: true }));
