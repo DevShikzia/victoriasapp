@@ -37,10 +37,14 @@ export class SincronizadorService {
       const partes: string[] = [];
 
       const visitas = await this.datos.visitasPendientesSync();
-      if (visitas.length === 0) {
-        partes.push('sin visitas pendientes');
+      const registros = await this.datos.registrosDomesticasPendientesSync();
+      if (visitas.length === 0 && registros.length === 0) {
+        partes.push('sin cambios pendientes');
       } else {
-        const cuerpo: SolicitudSync = { visitas: [...visitas] };
+        const cuerpo: SolicitudSync = {
+          visitas: [...visitas],
+          registrosDomesticas: [...registros],
+        };
         const respuesta = await firstValueFrom(
           this.http.post<RespuestaApi<ResultadoSync>>(`${CONFIG.apiBaseUrl}/api/sync`, cuerpo),
         );
@@ -49,9 +53,10 @@ export class SincronizadorService {
         if (errores.length > 0) {
           await this.datos.registrarErroresSync(errores);
         }
-        const total = aplicados.length + duplicados.length;
         const sufijo = errores.length > 0 ? `, ${String(errores.length)} con error` : '';
-        partes.push(`${String(total)} visitas${sufijo}`);
+        partes.push(
+          `${String(visitas.length)} visitas, ${String(registros.length)} registros de domésticas${sufijo}`,
+        );
       }
 
       const cambios = await this.sincronizarDirectorio();
@@ -85,6 +90,7 @@ export class SincronizadorService {
       pull.propietarios.length +
       pull.familiares.length +
       pull.vehiculos.length +
+      pull.domesticas.length +
       pull.eliminados.length
     );
   }

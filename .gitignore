@@ -64,3 +64,8 @@ certs/
 # Guías locales de despliegue (no se suben al repositorio)
 README-NETLIFY.local.md
 README-BACKEND.local.md
+
+# Configuración real del servidor: dominio, UUID del túnel y secretos
+deploy/cloudflared-config.yml
+deploy/.env
+deploy/.admin-password

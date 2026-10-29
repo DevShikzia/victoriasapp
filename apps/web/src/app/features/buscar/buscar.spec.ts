@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { DatosService } from '../../core/db/datos.service';
+import { sembrarDirectorioDePrueba } from '../../core/db/directorio.fixture';
 import { Buscar } from './buscar';
 
 function escribir(fixture: { nativeElement: unknown }, valor: string): void {
@@ -25,7 +26,7 @@ describe('Buscar (buscador global)', () => {
     await TestBed.configureTestingModule({ imports: [Buscar] }).compileComponents();
     datos = TestBed.inject(DatosService);
     await datos.limpiar();
-    await datos.cargarEjemplo();
+    await sembrarDirectorioDePrueba();
   });
 
   afterEach(async () => {

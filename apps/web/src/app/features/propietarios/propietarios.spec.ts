@@ -2,6 +2,7 @@ import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 
 import { DatosService } from '../../core/db/datos.service';
+import { sembrarDirectorioDePrueba } from '../../core/db/directorio.fixture';
 import { Propietarios } from './propietarios';
 
 function esperar(ms = 0): Promise<void> {
@@ -34,7 +35,7 @@ describe('Propietarios (listado rápido)', () => {
     await TestBed.configureTestingModule({ imports: [Propietarios] }).compileComponents();
     datos = TestBed.inject(DatosService);
     await datos.limpiar();
-    await datos.cargarEjemplo();
+    await sembrarDirectorioDePrueba();
   });
 
   afterEach(async () => {

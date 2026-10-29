@@ -14,6 +14,8 @@ export default tseslint.config(
       '**/*.mjs',
       '**/*.config.js',
       '**/public/config.js',
+      // Archivos de despliegue del servidor (no forman parte del build de la app).
+      'deploy/**',
     ],
   },
   eslint.configs.recommended,

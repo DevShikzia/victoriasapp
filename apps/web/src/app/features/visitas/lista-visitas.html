@@ -2,14 +2,184 @@
   <header class="encabezado">
     <div>
       <h1>Visitas</h1>
-      <p class="subtitulo">Movimiento de la garita en este celular.</p>
+      <p class="subtitulo">
+        Mostrando {{ rangoTexto() }}@if (soloAbiertas()) { · sin salida } · Movimiento de la
+        garita en este celular.
+      </p>
     </div>
-    <a routerLink="/visita/nueva" class="boton boton--acento">+ Nueva visita</a>
+    <div class="encabezado__acciones">
+      <button
+        type="button"
+        class="boton"
+        [class.boton--acento]="soloAbiertas()"
+        [class.boton--suave]="!soloAbiertas()"
+        (click)="alternarSoloAbiertas()"
+      >
+        {{ soloAbiertas() ? 'Solo sin salida' : 'Todas las visitas' }}
+      </button>
+      <button type="button" class="boton boton--suave" (click)="alternarFiltros()">
+        {{ filtrosAbiertos() ? 'Ocultar fechas' : 'Cambiar fechas' }}
+      </button>
+      <a routerLink="/visita/nueva" class="boton boton--acento">+ Nueva visita</a>
+    </div>
   </header>
+
+  @if (mensaje(); as texto) {
+    <p class="aviso aviso--ok" role="status">{{ texto }}</p>
+  }
+
+  @if (filtrosAbiertos()) {
+    <div class="filtros" aria-label="Filtros de visitas">
+      <label>
+        Desde
+        <input type="date" [ngModel]="filtroDesde()" (ngModelChange)="filtroDesde.set($event)" />
+      </label>
+      <label>
+        Hasta
+        <input type="date" [ngModel]="filtroHasta()" (ngModelChange)="filtroHasta.set($event)" />
+      </label>
+      <label class="filtros__buscar">
+        Buscar
+        <input
+          type="search"
+          placeholder="Nombre, DNI, patente, lote…"
+          [ngModel]="filtroTexto()"
+          (ngModelChange)="filtroTexto.set($event)"
+        />
+      </label>
+      <div class="filtros__acciones">
+        <button type="button" class="boton boton--suave" (click)="verHoy()">Hoy</button>
+        <button type="button" class="boton boton--suave" (click)="verTodos()">Ver todos</button>
+      </div>
+    </div>
+  }
+
+  @if (edicion(); as m) {
+    <form class="edicion" (ngSubmit)="guardarEdicion()">
+      <div class="edicion__cabecera">
+        <h2>Editar visita</h2>
+        <button type="button" class="boton boton--suave" (click)="cancelarEdicion()">Cerrar</button>
+      </div>
+
+      @if (errorEdicion(); as error) {
+        <p class="aviso aviso--error" role="alert">{{ error }}</p>
+      }
+
+      <div class="tipo" role="radiogroup" aria-label="Tipo de visita">
+        <label [class.activo]="m.tipo === 'ingreso'">
+          <input
+            type="radio"
+            name="tipoEdicion"
+            value="ingreso"
+            [ngModel]="m.tipo"
+            (ngModelChange)="actualizarTipoEdicion($event)"
+          />
+          Ingreso
+        </label>
+        <label [class.activo]="m.tipo === 'egreso'">
+          <input
+            type="radio"
+            name="tipoEdicion"
+            value="egreso"
+            [ngModel]="m.tipo"
+            (ngModelChange)="actualizarTipoEdicion($event)"
+          />
+          Egreso
+        </label>
+      </div>
+
+      <div class="campos">
+        <label>
+          Apellido
+          <input
+            type="text"
+            name="apellidoEdicion"
+            autocomplete="off"
+            [ngModel]="m.apellido"
+            (ngModelChange)="actualizarCampoEdicion('apellido', $event)"
+          />
+        </label>
+        <label>
+          Nombre
+          <input
+            type="text"
+            name="nombreEdicion"
+            autocomplete="off"
+            [ngModel]="m.nombre"
+            (ngModelChange)="actualizarCampoEdicion('nombre', $event)"
+          />
+        </label>
+        <label>
+          DNI
+          <input
+            type="text"
+            name="dniEdicion"
+            inputmode="numeric"
+            autocomplete="off"
+            [ngModel]="m.dni"
+            (ngModelChange)="actualizarDniEdicion($event)"
+          />
+        </label>
+        <label>
+          Patente
+          <input
+            type="text"
+            name="patenteEdicion"
+            autocomplete="off"
+            [ngModel]="m.patente"
+            (ngModelChange)="actualizarCampoEdicion('patente', $event)"
+          />
+        </label>
+        <label>
+          Lote
+          <input
+            type="text"
+            name="loteEdicion"
+            autocomplete="off"
+            [ngModel]="m.loteNumero"
+            (ngModelChange)="actualizarCampoEdicion('loteNumero', $event)"
+          />
+        </label>
+        <label>
+          Propietario
+          <input
+            type="text"
+            name="propietarioEdicion"
+            autocomplete="off"
+            [ngModel]="m.propietarioNombre"
+            (ngModelChange)="actualizarCampoEdicion('propietarioNombre', $event)"
+          />
+        </label>
+        <label>
+          Motivo
+          <input
+            type="text"
+            name="motivoEdicion"
+            autocomplete="off"
+            [ngModel]="m.motivo"
+            (ngModelChange)="actualizarCampoEdicion('motivo', $event)"
+          />
+        </label>
+      </div>
+
+      <p class="edicion__nota">
+        Entrada original: {{ editando()?.entradaEn | date: 'dd/MM/yyyy HH:mm' }}
+      </p>
+
+      <div class="edicion__acciones">
+        <button type="submit" class="boton boton--acento" [disabled]="guardandoEdicion()">
+          {{ guardandoEdicion() ? 'Guardando…' : 'Guardar cambios' }}
+        </button>
+        <button type="button" class="boton boton--suave" (click)="cancelarEdicion()">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  }
 
   <div class="resumen">
     <div class="metrica">
-      <span class="numero">{{ datos.abiertas() }}</span>
+      <span class="numero">{{ abiertasFiltradas() }}</span>
       <span class="etiqueta">abiertas</span>
     </div>
     <div class="metrica" [class.metrica--alerta]="datos.pendientes() > 0">
@@ -17,31 +187,10 @@
       <span class="etiqueta">por sincronizar</span>
     </div>
     <div class="metrica">
-      <span class="numero">{{ datos.visitas().length }}</span>
-      <span class="etiqueta">en este celular</span>
+      <span class="numero">{{ filtradas().length }}</span>
+      <span class="etiqueta">en el rango</span>
     </div>
   </div>
-
-  @if (mensaje(); as texto) {
-    <p class="aviso" role="status">{{ texto }}</p>
-  }
-
-  <details class="demo">
-    <summary>Datos de ejemplo</summary>
-    <div class="herramientas">
-      <button
-        type="button"
-        class="boton boton--suave"
-        [disabled]="ocupado()"
-        (click)="cargarEjemplo()"
-      >
-        Cargar datos de ejemplo
-      </button>
-      <button type="button" class="boton boton--peligro" [disabled]="ocupado()" (click)="limpiar()">
-        Limpiar datos
-      </button>
-    </div>
-  </details>
 
   @if (!datos.listo()) {
     <p class="vacio">Cargando…</p>
@@ -53,9 +202,27 @@
         conexión.
       </p>
     </div>
+  } @else if (filtradas().length === 0) {
+    <div class="vacio">
+      @if (soloAbiertas()) {
+        <p class="vacio__titulo">No hay visitas sin salida</p>
+        <p class="vacio__texto">
+          En este rango no quedan visitas abiertas.
+          <button type="button" class="enlace" (click)="alternarSoloAbiertas()">
+            Mostrar todas
+          </button>
+        </p>
+      } @else {
+        <p class="vacio__titulo">No hay visitas en este rango</p>
+        <p class="vacio__texto">
+          Probá cambiando las fechas o
+          <button type="button" class="enlace" (click)="verHoy()">volver a hoy</button>.
+        </p>
+      }
+    </div>
   } @else {
     <ul class="lista">
-      @for (visita of ordenadas(); track visita.uuid) {
+      @for (visita of filtradas(); track visita.uuid) {
         <li class="tarjeta" [class.tarjeta--abierta]="visita.salidaEn === null">
           <div class="principal">
             <span class="nombre">{{ visita.apellido }}, {{ visita.nombre }}</span>
@@ -88,16 +255,21 @@
 
           <div class="pie">
             <span class="sync sync--{{ visita.estadoSync }}">{{ visita.estadoSync }}</span>
-            @if (visita.salidaEn === null) {
-              <button
-                type="button"
-                class="boton boton--suave"
-                [disabled]="ocupado()"
-                (click)="marcarSalida(visita.uuid)"
-              >
-                Marcar salida
+            <div class="pie__acciones">
+              <button type="button" class="boton boton--suave" (click)="iniciarEdicion(visita)">
+                Editar
               </button>
-            }
+              @if (visita.salidaEn === null) {
+                <button
+                  type="button"
+                  class="boton boton--suave"
+                  [disabled]="ocupado()"
+                  (click)="marcarSalida(visita.uuid)"
+                >
+                  Marcar salida
+                </button>
+              }
+            </div>
           </div>
         </li>
       }

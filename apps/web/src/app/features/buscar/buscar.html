@@ -58,11 +58,6 @@
       <p class="pista__texto">
         Escribí un nombre, una patente o un lote. También podés buscar por calle o parentesco.
       </p>
-      <div class="pista__ejemplos">
-        @for (ejemplo of ['ricardo', '34', 'ab123', 'alamos']; track ejemplo) {
-          <button type="button" class="chip" (click)="probar(ejemplo)">{{ ejemplo }}</button>
-        }
-      </div>
     </div>
   } @else if (buscando()) {
     <p class="estado" role="status">Buscando…</p>

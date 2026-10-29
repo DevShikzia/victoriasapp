@@ -31,6 +31,15 @@ export function normalizarPatente(patente: string): string {
 }
 
 /**
+ * Deja solo los dígitos del número de DNI y quita un cero a la izquierda
+ * cuando el lector devuelve 9 dígitos (algunos PDF417 lo agregan).
+ */
+export function normalizarNumeroDni(valor: string): string {
+  const digitos = valor.replace(/\D/g, '');
+  return digitos.length === 9 && digitos.startsWith('0') ? digitos.slice(1) : digitos;
+}
+
+/**
  * Convierte una fecha `DD/MM/AAAA` o `AAAA-MM-DD` a ISO `YYYY-MM-DD`.
  * Devuelve `null` si no es una fecha válida.
  */

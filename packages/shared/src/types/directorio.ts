@@ -18,6 +18,7 @@ import {
   type TratamientoPropietario,
 } from '../directorio/tratamiento.js';
 import { normalizarPatente } from '../dni/normalizar.js';
+import type { DomesticaLocal } from './domesticas.js';
 import type { RolUsuario } from './dominio.js';
 
 // ---------------------------------------------------------------------------
@@ -334,6 +335,7 @@ export interface DirectorioPull {
   readonly propietarios: readonly PropietarioLocal[];
   readonly familiares: readonly FamiliarLocal[];
   readonly vehiculos: readonly VehiculoLocal[];
+  readonly domesticas: readonly DomesticaLocal[];
   readonly eliminados: readonly EliminadoDirectorio[];
 }
 

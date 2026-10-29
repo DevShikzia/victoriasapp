@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import type { NuevaVisita } from '@victoriasapp/shared';
 
 import { DatosService } from './datos.service';
+import { sembrarDirectorioDePrueba } from './directorio.fixture';
 
 function visitaDePrueba(): NuevaVisita {
   return {
@@ -57,7 +58,7 @@ describe('DatosService (offline, IndexedDB)', () => {
   });
 
   it('carga el directorio de ejemplo y lo encuentra por patente', async () => {
-    await servicio.cargarEjemplo();
+    await sembrarDirectorioDePrueba();
 
     const vehiculo = await servicio.vehiculoPorPatente('ab123cd');
     expect(vehiculo?.propietarioNombre).toBe('PEREZ, ANA');
@@ -69,7 +70,7 @@ describe('DatosService (offline, IndexedDB)', () => {
   });
 
   it('busca de forma difusa: sin tildes, en cualquier orden, con typos y por prefijo', async () => {
-    await servicio.cargarEjemplo();
+    await sembrarDirectorioDePrueba();
 
     // "alamos" encuentra la calle "Los Álamos" (sin tilde).
     const porCalle = await servicio.buscarLotes('alamos');
@@ -89,7 +90,7 @@ describe('DatosService (offline, IndexedDB)', () => {
   });
 
   it('busca familiares por nombre, parentesco y propietario', async () => {
-    await servicio.cargarEjemplo();
+    await sembrarDirectorioDePrueba();
 
     const porNombre = await servicio.buscarFamiliares('juan');
     expect(porNombre.map((f) => f.nombre)).toContain('JUAN PEREZ');
@@ -102,7 +103,7 @@ describe('DatosService (offline, IndexedDB)', () => {
   });
 
   it('el buscador global mezcla tipos: un número puede ser patente y lote', async () => {
-    await servicio.cargarEjemplo();
+    await sembrarDirectorioDePrueba();
 
     const resultados = await servicio.buscarGlobal('12');
     expect(resultados.lotes.map((l) => l.numero)).toContain('12');
@@ -118,7 +119,7 @@ describe('DatosService (offline, IndexedDB)', () => {
   });
 
   it('arma las relaciones de la ficha por propietario y lote', async () => {
-    await servicio.cargarEjemplo();
+    await sembrarDirectorioDePrueba();
 
     const familiares = await servicio.familiaresRelacionados('PEREZ, ANA', '42');
     expect(familiares.map((f) => f.nombre)).toContain('JUAN PEREZ');

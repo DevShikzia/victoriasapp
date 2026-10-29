@@ -14,7 +14,12 @@
 
 import type { DniData, DniFormato, ParseResult } from '../types/dominio.js';
 import { esMrz, parseMrz } from './mrz.js';
-import { aFechaIso, normalizarSexo, normalizarTexto } from './normalizar.js';
+import {
+  aFechaIso,
+  normalizarNumeroDni,
+  normalizarSexo,
+  normalizarTexto,
+} from './normalizar.js';
 
 const RE_DNI = /^\d{7,8}$/;
 
@@ -85,7 +90,7 @@ function construirDesdeCamposIntermedio(campos: readonly string[]): DniData {
     apellido: normalizarTexto(texto(campos[1])),
     nombre: normalizarTexto(texto(campos[2])),
     sexo: normalizarSexo(texto(campos[3])),
-    numeroDni: texto(campos[4]),
+    numeroDni: normalizarNumeroDni(texto(campos[4])),
     ejemplar: texto(campos[5]),
     fechaNacimiento: aFechaIso(texto(campos[6])),
     fechaEmision: aFechaIso(texto(campos[7])),
@@ -97,7 +102,7 @@ function construirDesdeCamposIntermedio(campos: readonly string[]): DniData {
 function construirDesdeCamposViejo(campos: readonly string[]): DniData {
   return {
     numeroTramite: texto(campos[0]),
-    numeroDni: texto(campos[1]),
+    numeroDni: normalizarNumeroDni(texto(campos[1])),
     ejemplar: texto(campos[2]),
     apellido: normalizarTexto(texto(campos[4])),
     nombre: normalizarTexto(texto(campos[5])),
@@ -118,7 +123,7 @@ function parsearDesdeMrz(texto: string): ParseResult {
   const data: DniData = {
     apellido: normalizarTexto(mrz.apellido),
     nombre: normalizarTexto(mrz.nombre),
-    numeroDni: mrz.numeroDocumento,
+    numeroDni: normalizarNumeroDni(mrz.numeroDocumento),
     sexo: mrz.sexo,
     fechaNacimiento: mrz.fechaNacimiento,
     numeroTramite: null,
@@ -142,7 +147,7 @@ function parsearDesdeMrz(texto: string): ParseResult {
 function validar(data: DniData): string[] {
   const errores: string[] = [];
   if (!RE_DNI.test(data.numeroDni)) {
-    errores.push('Número de DNI inválido');
+    errores.push(`Número de DNI inválido: "${data.numeroDni}" (se esperan 7 u 8 dígitos)`);
   }
   if (data.apellido === '') {
     errores.push('Apellido vacío');

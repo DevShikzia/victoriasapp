@@ -35,6 +35,12 @@ export const routes: Routes = [
     title: 'Visitas · MatiApp',
   },
   {
+    path: 'domesticas',
+    canActivate: [authGuard, barrioGuard],
+    loadComponent: () => import('./features/domesticas/domesticas').then((m) => m.Domesticas),
+    title: 'Domésticas - MatiApp',
+  },
+  {
     path: 'visita/nueva',
     canActivate: [authGuard, barrioGuard],
     loadComponent: () => import('./features/visita/nueva-visita').then((m) => m.NuevaVisita),

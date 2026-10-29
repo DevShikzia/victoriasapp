@@ -71,12 +71,6 @@ export class Buscar {
     this.programar(valor);
   }
 
-  protected probar(ejemplo: string): void {
-    this.consulta.set(ejemplo);
-    this.programar(ejemplo);
-    this.input()?.nativeElement.focus();
-  }
-
   protected limpiar(): void {
     this.cancelarTemporizador();
     this.version += 1;

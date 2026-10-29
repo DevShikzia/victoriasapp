@@ -1,12 +1,15 @@
 import { Injectable, signal } from '@angular/core';
 import type {
   DirectorioPull,
+  DomesticaLocal,
   EntidadDirectorio,
   ErrorSync,
   FamiliarLocal,
   LoteLocal,
   NuevaVisita,
   PropietarioLocal,
+  RegistroDomesticaLocal,
+  RegistroDomesticaSync,
   VehiculoLocal,
   Visita,
   VisitaSync,
@@ -14,7 +17,9 @@ import type {
 import {
   META_ULTIMA_SYNC_DIRECTORIO,
   crearIdLocal,
+  esquemaRegistroDomesticaSync,
   esquemaVisitaSync,
+  normalizarNumeroDni,
   normalizarParaBusqueda,
   normalizarPatente,
   ordenarPorCoincidencia,
@@ -23,7 +28,6 @@ import {
 
 import { RESULTADOS_VACIOS, type ResultadosGlobales } from '../busqueda/tipos';
 import { obtenerBaseLocal } from './base-local';
-import { datosDeEjemplo } from './seed';
 
 /** Ordena titulares de un lote: señor, señora y luego por apellido/nombre. */
 function compararPropietariosPorJerarquia(a: PropietarioLocal, b: PropietarioLocal): number {
@@ -40,6 +44,14 @@ function compararPropietariosPorJerarquia(a: PropietarioLocal, b: PropietarioLoc
     : a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base', numeric: true });
 }
 
+function textoOpcional(valor: string | null): string | null {
+  if (valor === null) {
+    return null;
+  }
+  const limpio = valor.trim();
+  return limpio === '' ? null : limpio;
+}
+
 /**
  * Acceso a los datos locales del PWA (IndexedDB) y operaciones de negocio
  * offline: guardar visitas, marcarlas como egreso, buscar en el directorio
@@ -51,6 +63,12 @@ export class DatosService {
 
   /** Visitas locales, más recientes primero. */
   readonly visitas = signal<readonly Visita[]>([]);
+  /** Perfiles de domésticas cacheados para buscar sin red. */
+  readonly domesticas = signal<readonly DomesticaLocal[]>([]);
+  /** Entradas/salidas de domésticas, más recientes primero. */
+  readonly registrosDomesticas = signal<readonly RegistroDomesticaLocal[]>([]);
+  /** Lotes cacheados (para selects y nombres). */
+  readonly lotes = signal<readonly LoteLocal[]>([]);
   /** Cantidad de operaciones pendientes de sincronizar. */
   readonly pendientes = signal(0);
   /** Cantidad de visitas abiertas (sin salida). */
@@ -63,6 +81,11 @@ export class DatosService {
   async refrescar(): Promise<void> {
     const visitas = await this.db.visitas.orderBy('entradaEn').reverse().toArray();
     this.visitas.set(visitas);
+    this.domesticas.set(await this.db.domesticas.orderBy('apellido').toArray());
+    this.registrosDomesticas.set(
+      await this.db.registrosDomesticas.orderBy('entradaEn').reverse().toArray(),
+    );
+    this.lotes.set(await this.db.lotes.orderBy('numero').toArray());
     this.pendientes.set(await this.db.outbox.count());
     this.abiertas.set(visitas.filter((v) => v.salidaEn === null).length);
     this.listo.set(true);
@@ -129,6 +152,170 @@ export class DatosService {
     await this.refrescar();
   }
 
+  /**
+   * Edita una visita guardada localmente y encola la actualización para que
+   * el servidor reciba los cambios en la próxima sincronización.
+   */
+  async editarVisita(uuid: string, cambios: NuevaVisita): Promise<Visita | null> {
+    const actual = await this.db.visitas.get(uuid);
+    if (actual === undefined) {
+      return null;
+    }
+    const ahora = new Date().toISOString();
+    const actualizada: Visita = {
+      ...actual,
+      ...cambios,
+      uuid,
+      actualizadoEn: ahora,
+      estadoSync: 'pendiente',
+      ultimoErrorSync: null,
+    };
+    await this.db.transaction('rw', this.db.visitas, this.db.outbox, async () => {
+      await this.db.visitas.put(actualizada);
+      await this.db.outbox.add({
+        id: crearIdLocal(),
+        entidad: 'visita',
+        operacion: 'update',
+        uuid,
+        payload: { ...actualizada },
+        creadoEn: ahora,
+        intentos: 0,
+        ultimoError: null,
+      });
+    });
+    await this.refrescar();
+    return actualizada;
+  }
+
+  // --- Domésticas (offline) ---
+
+  async listarDomesticas(): Promise<readonly DomesticaLocal[]> {
+    return await this.db.domesticas.orderBy('apellido').toArray();
+  }
+
+  async listarLotes(): Promise<readonly LoteLocal[]> {
+    return await this.db.lotes.orderBy('numero').toArray();
+  }
+
+  async domesticaPorDni(dni: string): Promise<DomesticaLocal | undefined> {
+    const normalizado = normalizarNumeroDni(dni);
+    if (normalizado === '') {
+      return undefined;
+    }
+    return await this.db.domesticas.where('dni').equals(normalizado).first();
+  }
+
+  async registroDomesticaAbierto(
+    domesticaUuid: string,
+  ): Promise<RegistroDomesticaLocal | undefined> {
+    const registros = await this.db.registrosDomesticas
+      .where('domesticaUuid')
+      .equals(domesticaUuid)
+      .toArray();
+    return registros.find((registro) => registro.salidaEn === null);
+  }
+
+  /**
+   * Registra la entrada de una doméstica. Devuelve `null` si ya tiene una
+   * entrada abierta (la UI debe pedir la salida primero).
+   */
+  async registrarEntradaDomestica(
+    domesticaUuid: string,
+    loteUuid: string,
+    descripcion: string | null,
+  ): Promise<RegistroDomesticaLocal | null> {
+    const abierto = await this.registroDomesticaAbierto(domesticaUuid);
+    if (abierto !== undefined) {
+      return null;
+    }
+    const ahora = new Date().toISOString();
+    const registro: RegistroDomesticaLocal = {
+      uuid: crearIdLocal(),
+      domesticaUuid,
+      loteUuid,
+      entradaEn: ahora,
+      salidaEn: null,
+      descripcion: textoOpcional(descripcion),
+      creadoOffline: true,
+      estadoSync: 'pendiente',
+      intentosSync: 0,
+      ultimoErrorSync: null,
+      creadoEn: ahora,
+      actualizadoEn: ahora,
+    };
+
+    await this.db.transaction(
+      'rw',
+      this.db.registrosDomesticas,
+      this.db.outbox,
+      async () => {
+        await this.db.registrosDomesticas.add(registro);
+        await this.db.outbox.add({
+          id: crearIdLocal(),
+          entidad: 'registroDomestica',
+          operacion: 'create',
+          uuid: registro.uuid,
+          payload: { ...registro },
+          creadoEn: ahora,
+          intentos: 0,
+          ultimoError: null,
+        });
+      },
+    );
+
+    await this.refrescar();
+    return registro;
+  }
+
+  /**
+   * Cierra la entrada abierta de una doméstica. Si recibe una descripción,
+   * reemplaza la de la entrada; si no, conserva la original.
+   */
+  async registrarSalidaDomestica(
+    uuid: string,
+    descripcion?: string | null,
+  ): Promise<RegistroDomesticaLocal | null> {
+    const actual = await this.db.registrosDomesticas.get(uuid);
+    if (actual === undefined) {
+      return null;
+    }
+    if (actual.salidaEn !== null) {
+      return null;
+    }
+    const ahora = new Date().toISOString();
+    const actualizado: RegistroDomesticaLocal = {
+      ...actual,
+      salidaEn: ahora,
+      descripcion:
+        descripcion === undefined ? actual.descripcion : textoOpcional(descripcion),
+      estadoSync: 'pendiente',
+      actualizadoEn: ahora,
+      ultimoErrorSync: null,
+    };
+
+    await this.db.transaction(
+      'rw',
+      this.db.registrosDomesticas,
+      this.db.outbox,
+      async () => {
+        await this.db.registrosDomesticas.put(actualizado);
+        await this.db.outbox.add({
+          id: crearIdLocal(),
+          entidad: 'registroDomestica',
+          operacion: 'update',
+          uuid,
+          payload: { ...actualizado },
+          creadoEn: ahora,
+          intentos: 0,
+          ultimoError: null,
+        });
+      },
+    );
+
+    await this.refrescar();
+    return actualizado;
+  }
+
   // --- Sincronización (outbox → API) ---
 
   /**
@@ -151,28 +338,59 @@ export class DatosService {
     return [...porUuid.values()];
   }
 
+  /** Registros de domésticas pendientes, deduplicados por `uuid`. */
+  async registrosDomesticasPendientesSync(): Promise<readonly RegistroDomesticaSync[]> {
+    const items = await this.db.outbox.where('entidad').equals('registroDomestica').toArray();
+    const porUuid = new Map<string, RegistroDomesticaSync>();
+    for (const item of items) {
+      const resultado = esquemaRegistroDomesticaSync.safeParse(item.payload);
+      if (!resultado.success) {
+        continue;
+      }
+      const actual = porUuid.get(resultado.data.uuid);
+      if (actual === undefined || resultado.data.actualizadoEn > actual.actualizadoEn) {
+        porUuid.set(resultado.data.uuid, resultado.data);
+      }
+    }
+    return [...porUuid.values()];
+  }
+
   /** Marca las visitas ya aplicadas como sincronizadas y limpia su outbox. */
   async confirmarSincronizacion(uuids: readonly string[]): Promise<void> {
     if (uuids.length === 0) {
       return;
     }
-    await this.db.transaction('rw', this.db.visitas, this.db.outbox, async () => {
-      for (const uuid of uuids) {
-        const visita = await this.db.visitas.get(uuid);
-        if (visita !== undefined) {
-          await this.db.visitas.put({
-            ...visita,
-            estadoSync: 'sincronizada',
-            ultimoErrorSync: null,
-          });
+    await this.db.transaction(
+      'rw',
+      this.db.visitas,
+      this.db.registrosDomesticas,
+      this.db.outbox,
+      async () => {
+        for (const uuid of uuids) {
+          const visita = await this.db.visitas.get(uuid);
+          if (visita !== undefined) {
+            await this.db.visitas.put({
+              ...visita,
+              estadoSync: 'sincronizada',
+              ultimoErrorSync: null,
+            });
+          }
+          const registro = await this.db.registrosDomesticas.get(uuid);
+          if (registro !== undefined) {
+            await this.db.registrosDomesticas.put({
+              ...registro,
+              estadoSync: 'sincronizada',
+              ultimoErrorSync: null,
+            });
+          }
         }
-      }
-      const items = await this.db.outbox.where('entidad').equals('visita').toArray();
-      const ids = items.filter((item) => uuids.includes(item.uuid)).map((item) => item.id);
-      if (ids.length > 0) {
-        await this.db.outbox.bulkDelete(ids);
-      }
-    });
+        const items = await this.db.outbox.toArray();
+        const ids = items.filter((item) => uuids.includes(item.uuid)).map((item) => item.id);
+        if (ids.length > 0) {
+          await this.db.outbox.bulkDelete(ids);
+        }
+      },
+    );
     await this.refrescar();
   }
 
@@ -181,22 +399,36 @@ export class DatosService {
     if (errores.length === 0) {
       return;
     }
-    await this.db.transaction('rw', this.db.outbox, this.db.visitas, async () => {
-      for (const error of errores) {
-        const items = await this.db.outbox.where('uuid').equals(error.uuid).toArray();
-        for (const item of items) {
-          await this.db.outbox.put({
-            ...item,
-            intentos: item.intentos + 1,
-            ultimoError: error.mensaje,
-          });
+    await this.db.transaction(
+      'rw',
+      this.db.outbox,
+      this.db.visitas,
+      this.db.registrosDomesticas,
+      async () => {
+        for (const error of errores) {
+          const items = await this.db.outbox.where('uuid').equals(error.uuid).toArray();
+          for (const item of items) {
+            await this.db.outbox.put({
+              ...item,
+              intentos: item.intentos + 1,
+              ultimoError: error.mensaje,
+            });
+          }
+          const visita = await this.db.visitas.get(error.uuid);
+          if (visita !== undefined) {
+            await this.db.visitas.put({ ...visita, ultimoErrorSync: error.mensaje });
+          }
+          const registro = await this.db.registrosDomesticas.get(error.uuid);
+          if (registro !== undefined) {
+            await this.db.registrosDomesticas.put({
+              ...registro,
+              estadoSync: 'error',
+              ultimoErrorSync: error.mensaje,
+            });
+          }
         }
-        const visita = await this.db.visitas.get(error.uuid);
-        if (visita !== undefined) {
-          await this.db.visitas.put({ ...visita, ultimoErrorSync: error.mensaje });
-        }
-      }
-    });
+      },
+    );
     await this.refrescar();
   }
 
@@ -378,15 +610,6 @@ export class DatosService {
     return this.db.vehiculos.where('patente').equals(norm).first();
   }
 
-  async contarDirectorio(): Promise<number> {
-    return (
-      (await this.db.propietarios.count()) +
-      (await this.db.lotes.count()) +
-      (await this.db.vehiculos.count()) +
-      (await this.db.familiares.count())
-    );
-  }
-
   // --- Directorio remoto (pull incremental) ---
 
   /** Lee un valor de metadatos locales. */
@@ -402,11 +625,14 @@ export class DatosService {
   async aplicarDirectorio(pull: DirectorioPull): Promise<void> {
     await this.db.transaction(
       'rw',
-      this.db.lotes,
-      this.db.propietarios,
-      this.db.familiares,
-      this.db.vehiculos,
-      this.db.meta,
+      [
+        this.db.lotes,
+        this.db.propietarios,
+        this.db.familiares,
+        this.db.vehiculos,
+        this.db.domesticas,
+        this.db.meta,
+      ],
       async () => {
         if (pull.lotes.length > 0) {
           await this.db.lotes.bulkPut([...pull.lotes]);
@@ -420,12 +646,17 @@ export class DatosService {
         if (pull.vehiculos.length > 0) {
           await this.db.vehiculos.bulkPut([...pull.vehiculos]);
         }
+        if (pull.domesticas.length > 0) {
+          await this.db.domesticas.bulkPut([...pull.domesticas]);
+        }
         for (const eliminado of pull.eliminados) {
           await this.borrarEntidadLocal(eliminado.entidad, eliminado.uuid);
         }
         await this.db.meta.put({ clave: META_ULTIMA_SYNC_DIRECTORIO, valor: pull.desde });
       },
     );
+    this.domesticas.set(await this.db.domesticas.orderBy('apellido').toArray());
+    this.lotes.set(await this.db.lotes.orderBy('numero').toArray());
     this.directorioVersion.update((version) => version + 1);
   }
 
@@ -448,27 +679,7 @@ export class DatosService {
     }
   }
 
-  // --- Utilidades de desarrollo ---
-
-  async cargarEjemplo(): Promise<void> {
-    const datos = datosDeEjemplo();
-    await this.db.transaction(
-      'rw',
-      this.db.lotes,
-      this.db.propietarios,
-      this.db.familiares,
-      this.db.vehiculos,
-      async () => {
-        await this.db.lotes.bulkPut([...datos.lotes]);
-        await this.db.propietarios.bulkPut([...datos.propietarios]);
-        await this.db.familiares.bulkPut([...datos.familiares]);
-        await this.db.vehiculos.bulkPut([...datos.vehiculos]);
-      },
-    );
-    this.directorioVersion.update((version) => version + 1);
-  }
-
-  /** Borra todo (visitas, outbox y directorio). Útil en desarrollo. */
+  /** Borra todo (visitas, outbox y directorio). Útil para pruebas y soporte. */
   async limpiar(): Promise<void> {
     await this.db.transaction('rw', this.db.tables, async () => {
       for (const tabla of this.db.tables) {

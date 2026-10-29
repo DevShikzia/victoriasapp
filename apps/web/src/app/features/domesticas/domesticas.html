@@ -1,0 +1,527 @@
+<section class="pantalla">
+  <header class="encabezado">
+    <div>
+      <h1>Domésticas</h1>
+      <p class="subtitulo">
+        Personal que trabaja en los lotes. Entradas, tareas y salidas.
+      </p>
+    </div>
+    @if (puedeAdministrar() && vista() === 'listado') {
+      <button type="button" class="boton boton--acento" (click)="abrirNuevoPerfil()">
+        + Nueva doméstica
+      </button>
+    }
+  </header>
+
+  <div class="vistas">
+    <button
+      type="button"
+      class="boton"
+      [class.boton--acento]="vista() === 'listado'"
+      [class.boton--suave]="vista() !== 'listado'"
+      (click)="cambiarVista('listado')"
+    >
+      Listado
+    </button>
+    <button
+      type="button"
+      class="boton"
+      [class.boton--acento]="vista() === 'historial'"
+      [class.boton--suave]="vista() !== 'historial'"
+      (click)="cambiarVista('historial')"
+    >
+      Historial
+    </button>
+  </div>
+
+  @if (mensaje(); as texto) {
+    <p class="aviso aviso--ok" role="status">{{ texto }}</p>
+  }
+  @if (error(); as texto) {
+    <p class="aviso aviso--error" role="alert">{{ texto }}</p>
+  }
+
+  @if (entrada(); as e) {
+    <section class="panel" aria-label="Registrar entrada">
+      <div class="panel__cabecera">
+        <div>
+          <h2>Registrar entrada</h2>
+          <p class="panel__sub">
+            {{ e.domestica.apellido }}, {{ e.domestica.nombre }} · DNI {{ e.domestica.dni }}
+          </p>
+        </div>
+        <button type="button" class="boton boton--suave" (click)="cancelarEntrada()">
+          Cerrar
+        </button>
+      </div>
+
+      <form class="formulario" (ngSubmit)="guardarEntrada()">
+        <label>
+          Lote
+          <select
+            name="loteEntrada"
+            [ngModel]="e.loteUuid"
+            (ngModelChange)="actualizarLoteEntrada($event)"
+          >
+            @for (opcion of opcionesEntrada(); track opcion.uuid) {
+              <option [value]="opcion.uuid">{{ opcion.etiqueta }}</option>
+            }
+          </select>
+        </label>
+
+        <div class="chips">
+          @for (texto of descripcionesRapidas; track texto) {
+            <button
+              type="button"
+              class="chip-boton"
+              (click)="elegirDescripcionEntrada(texto)"
+            >
+              {{ texto }}
+            </button>
+          }
+        </div>
+
+        <label>
+          Descripción
+          <textarea
+            name="descripcionEntrada"
+            rows="3"
+            [ngModel]="e.descripcion"
+            (ngModelChange)="actualizarDescripcionEntrada($event)"
+            placeholder="Tareas del día, observaciones…"
+          ></textarea>
+        </label>
+
+        <div class="panel__acciones">
+          <button type="submit" class="boton boton--acento" [disabled]="e.loteUuid === ''">
+            Registrar entrada
+          </button>
+          <button type="button" class="boton boton--suave" (click)="cancelarEntrada()">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (salida(); as s) {
+    <section class="panel" aria-label="Registrar salida">
+      <div class="panel__cabecera">
+        <div>
+          <h2>Registrar salida</h2>
+          <p class="panel__sub">
+            {{ nombreDomestica(s.domesticaUuid) }} · Lote {{ loteNumero(s.loteUuid) }} · Entrada
+            {{ s.entradaEn | date: 'dd/MM HH:mm' }}
+          </p>
+        </div>
+        <button type="button" class="boton boton--suave" (click)="cancelarSalida()">
+          Cerrar
+        </button>
+      </div>
+
+      <form class="formulario" (ngSubmit)="confirmarSalida()">
+        <label>
+          Descripción
+          <textarea
+            name="descripcionSalida"
+            rows="3"
+            [ngModel]="descripcionSalida()"
+            (ngModelChange)="actualizarDescripcionSalida($event)"
+            placeholder="Tareas realizadas, observaciones…"
+          ></textarea>
+        </label>
+
+        <div class="panel__acciones">
+          <button type="submit" class="boton boton--acento">Confirmar salida</button>
+          <button type="button" class="boton boton--suave" (click)="cancelarSalida()">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (perfil(); as m) {
+    <section class="panel" aria-label="Perfil de doméstica">
+      <div class="panel__cabecera">
+        <div>
+          <h2>{{ m.uuid === null ? 'Nueva doméstica' : 'Editar doméstica' }}</h2>
+          <p class="panel__sub">El DNI es obligatorio y no se puede repetir en el barrio.</p>
+        </div>
+        <button type="button" class="boton boton--suave" (click)="cancelarPerfil()">
+          Cerrar
+        </button>
+      </div>
+
+      @if (errorPerfil(); as texto) {
+        <p class="aviso aviso--error" role="alert">{{ texto }}</p>
+      }
+
+      <div class="panel__escaner">
+        <button type="button" class="boton boton--suave" (click)="alternarEscanerPerfil()">
+          {{ mostrarEscanerPerfil() ? 'Cerrar escáner' : 'Escanear DNI' }}
+        </button>
+        @if (mostrarEscanerPerfil()) {
+          <app-escaner-dni (detectado)="alEscanearPerfil($event)" />
+        }
+      </div>
+
+      <form class="formulario" (ngSubmit)="guardarPerfil()">
+        <div class="campos">
+          <label>
+            DNI
+            <input
+              type="text"
+              name="dniPerfil"
+              inputmode="numeric"
+              autocomplete="off"
+              [ngModel]="m.dni"
+              (ngModelChange)="actualizarDniPerfil($event)"
+            />
+          </label>
+          <label>
+            Apellido
+            <input
+              type="text"
+              name="apellidoPerfil"
+              autocomplete="off"
+              [ngModel]="m.apellido"
+              (ngModelChange)="actualizarPerfil('apellido', $event)"
+            />
+          </label>
+          <label>
+            Nombre
+            <input
+              type="text"
+              name="nombrePerfil"
+              autocomplete="off"
+              [ngModel]="m.nombre"
+              (ngModelChange)="actualizarPerfil('nombre', $event)"
+            />
+          </label>
+          <label>
+            Teléfono
+            <input
+              type="tel"
+              name="telefonoPerfil"
+              autocomplete="off"
+              [ngModel]="m.telefono"
+              (ngModelChange)="actualizarPerfil('telefono', $event)"
+            />
+          </label>
+          <label>
+            Lote principal
+            <select
+              name="lotePrincipalPerfil"
+              [ngModel]="m.lotePrincipalUuid"
+              (ngModelChange)="actualizarPerfil('lotePrincipalUuid', $event)"
+            >
+              @for (lote of datos.lotes(); track lote.uuid) {
+                <option [value]="lote.uuid">
+                  Lote {{ lote.numero }}{{ lote.calle === null ? '' : ' · ' + lote.calle }}
+                </option>
+              }
+            </select>
+          </label>
+          <fieldset class="lotes-habituales">
+            <legend>Lotes habituales</legend>
+            @for (lote of datos.lotes(); track lote.uuid) {
+              @if (lote.uuid !== m.lotePrincipalUuid) {
+                <label class="check">
+                  <input
+                    type="checkbox"
+                    [checked]="m.lotesHabituales.includes(lote.uuid)"
+                    (change)="alternarHabitual(lote.uuid, $event)"
+                  />
+                  Lote {{ lote.numero }}
+                </label>
+              }
+            }
+          </fieldset>
+        </div>
+
+        <label class="check">
+          <input
+            type="checkbox"
+            name="activoPerfil"
+            [ngModel]="m.activo"
+            (ngModelChange)="actualizarPerfil('activo', $event)"
+          />
+          Activa
+        </label>
+
+        <label>
+          Notas
+          <textarea
+            name="notasPerfil"
+            rows="2"
+            [ngModel]="m.notas"
+            (ngModelChange)="actualizarPerfil('notas', $event)"
+            placeholder="Observaciones…"
+          ></textarea>
+        </label>
+
+        <div class="panel__acciones">
+          <button type="submit" class="boton boton--acento" [disabled]="guardandoPerfil()">
+            {{ guardandoPerfil() ? 'Guardando…' : 'Guardar' }}
+          </button>
+          <button type="button" class="boton boton--suave" (click)="cancelarPerfil()">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (vista() === 'listado') {
+    <div class="filtros">
+      <label class="filtros__buscar">
+        Buscar
+        <input
+          type="search"
+          [ngModel]="busqueda()"
+          (ngModelChange)="busqueda.set($event)"
+          placeholder="Nombre o DNI…"
+        />
+      </label>
+      <label>
+        Lote
+        <select [ngModel]="filtroLoteUuid()" (ngModelChange)="filtroLoteUuid.set($event)">
+          <option value="">Todos</option>
+          @for (lote of datos.lotes(); track lote.uuid) {
+            <option [value]="lote.uuid">Lote {{ lote.numero }}</option>
+          }
+        </select>
+      </label>
+      @if (puedeAdministrar()) {
+        <label class="check">
+          <input
+            type="checkbox"
+            [ngModel]="verInactivas()"
+            (ngModelChange)="verInactivas.set($event)"
+          />
+          Ver inactivas
+        </label>
+      }
+    </div>
+
+    @if (domesticasFiltradas().length === 0) {
+      <div class="vacio">
+        <p class="vacio__titulo">No hay domésticas para mostrar</p>
+        <p class="vacio__texto">
+          @if (datos.domesticas().length === 0) {
+            Todavía no hay perfiles cargados. Usá “+ Nueva doméstica”.
+          } @else {
+            Probá con otra búsqueda o con otro lote.
+          }
+        </p>
+      </div>
+    } @else {
+      <ul class="lista">
+        @for (d of domesticasFiltradas(); track d.uuid) {
+          <li class="tarjeta">
+            <div class="tarjeta__cabecera">
+              <div class="tarjeta__persona">
+                <span class="nombre">{{ d.apellido }}, {{ d.nombre }}</span>
+                <span class="dni">DNI {{ d.dni }}</span>
+              </div>
+              <span
+                class="estado"
+                [class.estado--dentro]="abiertosPorDomestica().has(d.uuid)"
+              >
+                {{ abiertosPorDomestica().has(d.uuid) ? 'Dentro' : 'Fuera' }}
+              </span>
+            </div>
+
+            <div class="lotes">
+              <span class="chip">Lote {{ loteNumero(d.lotePrincipalUuid) }}</span>
+              @for (numero of lotesHabitualesNumeros(d); track numero) {
+                <span class="chip chip--suave">También {{ numero }}</span>
+              }
+              @if (!d.activo) {
+                <span class="chip chip--inactiva">Inactiva</span>
+              }
+            </div>
+
+            @if (abiertosPorDomestica().get(d.uuid); as abierto) {
+              <div class="dentro">
+                <p>
+                  Dentro en lote {{ loteNumero(abierto.loteUuid) }} ·
+                  {{ abierto.entradaEn | date: 'dd/MM HH:mm' }}
+                </p>
+                @if (abierto.descripcion !== null) {
+                  <p class="descripcion">{{ abierto.descripcion }}</p>
+                }
+              </div>
+              <div class="acciones">
+                <button
+                  type="button"
+                  class="boton boton--acento"
+                  (click)="abrirSalida(abierto)"
+                >
+                  Registrar salida
+                </button>
+                @if (puedeAdministrar()) {
+                  <button
+                    type="button"
+                    class="boton boton--suave"
+                    (click)="editarPerfil(d)"
+                  >
+                    Editar
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="acciones">
+                <button
+                  type="button"
+                  class="boton boton--acento"
+                  [disabled]="!d.activo"
+                  (click)="abrirEntrada(d)"
+                >
+                  Registrar entrada
+                </button>
+                @if (puedeAdministrar()) {
+                  <button
+                    type="button"
+                    class="boton boton--suave"
+                    (click)="editarPerfil(d)"
+                  >
+                    Editar
+                  </button>
+                  @if (d.activo) {
+                    <button
+                      type="button"
+                      class="boton boton--peligro"
+                      (click)="desactivarPerfil(d)"
+                    >
+                      Desactivar
+                    </button>
+                  }
+                }
+              </div>
+            }
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    <div class="filtros filtros--historial">
+      <label>
+        Desde
+        <input
+          type="date"
+          [ngModel]="historialDesde()"
+          (ngModelChange)="historialDesde.set($event)"
+        />
+      </label>
+      <label>
+        Hasta
+        <input
+          type="date"
+          [ngModel]="historialHasta()"
+          (ngModelChange)="historialHasta.set($event)"
+        />
+      </label>
+      <label>
+        Lote
+        <select
+          [ngModel]="historialLoteUuid()"
+          (ngModelChange)="historialLoteUuid.set($event)"
+        >
+          <option value="">Todos</option>
+          @for (lote of datos.lotes(); track lote.uuid) {
+            <option [value]="lote.uuid">Lote {{ lote.numero }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        Doméstica
+        <select
+          [ngModel]="historialDomesticaUuid()"
+          (ngModelChange)="historialDomesticaUuid.set($event)"
+        >
+          <option value="">Todas</option>
+          @for (d of datos.domesticas(); track d.uuid) {
+            <option [value]="d.uuid">{{ d.apellido }}, {{ d.nombre }} · {{ d.dni }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        Estado
+        <select
+          [ngModel]="historialEstado()"
+          (ngModelChange)="historialEstado.set($event)"
+        >
+          <option value="todas">Todas</option>
+          <option value="dentro">Dentro</option>
+          <option value="fuera">Fuera</option>
+        </select>
+      </label>
+      <label class="filtros__buscar">
+        Buscar
+        <input
+          type="search"
+          [ngModel]="historialTexto()"
+          (ngModelChange)="historialTexto.set($event)"
+          placeholder="DNI, nombre, lote, tarea…"
+        />
+      </label>
+      <div class="filtros__acciones">
+        <button type="button" class="boton boton--suave" (click)="verHistorialHoy()">
+          Hoy
+        </button>
+      </div>
+    </div>
+
+    @if (historialRegistros().length === 0) {
+      <div class="vacio">
+        <p class="vacio__titulo">No hay registros en este rango</p>
+        <p class="vacio__texto">Probá cambiando las fechas o el estado.</p>
+      </div>
+    } @else {
+      <ul class="lista">
+        @for (item of historialRegistros(); track item.registro.uuid) {
+          <li class="tarjeta tarjeta--historial">
+            <div class="tarjeta__cabecera">
+              <div class="tarjeta__persona">
+                <span class="nombre">{{ item.nombre }}</span>
+                <span class="dni">DNI {{ item.dni }}</span>
+              </div>
+              <span
+                class="estado"
+                [class.estado--dentro]="item.registro.salidaEn === null"
+              >
+                {{ item.registro.salidaEn === null ? 'Dentro' : 'Fuera' }}
+              </span>
+            </div>
+
+            <div class="lotes">
+              <span class="chip">Lote {{ item.lote }}</span>
+            </div>
+
+            <div class="horarios">
+              <span>Entrada: {{ item.registro.entradaEn | date: 'dd/MM HH:mm' }}</span>
+              @if (item.registro.salidaEn !== null) {
+                <span>Salida: {{ item.registro.salidaEn | date: 'dd/MM HH:mm' }}</span>
+              } @else {
+                <span class="abierta">Sin salida</span>
+              }
+              <span>Duración: {{ duracion(item.registro) }}</span>
+            </div>
+
+            @if (item.registro.descripcion !== null) {
+              <p class="descripcion">{{ item.registro.descripcion }}</p>
+            }
+
+            <div class="pie">
+              <span class="sync sync--{{ item.registro.estadoSync }}">
+                {{ item.registro.estadoSync }}
+              </span>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  }
+</section>

@@ -102,6 +102,47 @@ Atajo para marcar egreso.
 
 Lista de visitantes actualmente dentro (sin `salidaEn`).
 
+## Domésticas
+
+Personal que trabaja en uno o más lotes. El **perfil** (nombre, apellido, DNI, teléfono, lote
+principal, lotes habituales, notas) se administra online y se cachea en el PWA; cada
+**entrada/salida** es un registro independiente que se crea offline y se sube por `/api/sync`.
+
+Todas las rutas exigen autenticación y barrio activo, y **nunca** aceptan un `barrioId` del cuerpo:
+siempre usan el del access token. Sólo `admin` y `supervisor` pueden crear, editar o desactivar
+perfiles; cualquier usuario del barrio puede registrar entradas y salidas.
+
+| Método | Ruta | Rol | Descripción |
+| --- | --- | --- | --- |
+| `GET` | `/api/domesticas` | cualquiera | Lista perfiles. Filtros: `q` (nombre, apellido, DNI), `lote` (uuid o número), `activo` (`true`/`false`) |
+| `POST` | `/api/domesticas` | admin/supervisor | Crea el perfil |
+| `PATCH` | `/api/domesticas/:uuid` | admin/supervisor | Edita el perfil |
+| `DELETE` | `/api/domesticas/:uuid` | admin/supervisor | **Desactiva** el perfil (no borra historial) |
+| `GET` | `/api/domesticas/registros` | cualquiera | Historial con filtros |
+
+```json
+{
+  "nombre": "Rosa",
+  "apellido": "Molina",
+  "dni": "33444555",
+  "telefono": "11-4444-4444",
+  "lotePrincipalUuid": "9f1c…",
+  "lotesHabituales": ["4a2b…"],
+  "activo": true,
+  "notas": "Limpia los martes"
+}
+```
+
+Los lotes se referencian por **uuid** (no por id de Mongo) para que el mismo payload sirva online y
+offline. El DNI es único por barrio (`409 CONFLICT` si se repite).
+
+`GET /api/domesticas/registros` acepta `q` (texto libre sobre nombre, DNI, lote y descripción),
+`estado` (`dentro` | `fuera`), `lote` (uuid o número), `domestica` (uuid), `desde`/`hasta` (ISO,
+inclusive sobre `entradaEn`) y `limit` (default 200, máximo 500). Ordena por `entradaEn` descendente.
+
+Regla de negocio: **una doméstica no puede tener dos entradas abiertas**. El servidor rechaza el
+registro con `La doméstica ya tiene una entrada abierta`; el cliente lo valida antes de encolar.
+
 ## Sincronización
 
 ### `POST /api/sync`
@@ -124,9 +165,27 @@ cuerpo.
       "entradaEn": "2026-10-13T12:00:00Z",
       "creadoOffline": true
     }
+  ],
+  "registrosDomesticas": [
+    {
+      "uuid": "d9e8...",
+      "domesticaUuid": "9f1c...",
+      "loteUuid": "4a2b...",
+      "entradaEn": "2026-10-13T12:00:00Z",
+      "salidaEn": null,
+      "descripcion": "Limpieza",
+      "creadoOffline": true,
+      "actualizadoEn": "2026-10-13T12:00:00Z"
+    }
   ]
 }
 ```
+
+Ambas listas son opcionales y se procesan por separado; la respuesta combina los resultados. Los
+registros de domésticas se identifican por `uuid` y se actualizan con el mismo `uuid` al marcar la
+salida. Para resolver conflictos se compara `actualizadoEn` del cliente contra la última
+modificación que envió el dispositivo (no contra el reloj del servidor), así un celular con la hora
+atrasada no queda bloqueado.
 
 Respuesta:
 
@@ -189,6 +248,7 @@ activo**, más las bajas:
     "propietarios": [],
     "familiares": [],
     "vehiculos": [],
+    "domesticas": [],
     "eliminados": [{ "uuid": "…", "entidad": "propietario", "eliminadoEn": "…" }]
   }
 }

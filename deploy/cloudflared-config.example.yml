@@ -1,0 +1,9 @@
+tunnel: REEMPLAZAR-CON-UUID-DEL-TUNEL
+credentials-file: /home/USUARIO/.cloudflared/REEMPLAZAR-CON-UUID-DEL-TUNEL.json
+
+ingress:
+  - hostname: matiapp.TUDOMINIO.com
+    service: http://127.0.0.1:8081
+  - hostname: www.TUDOMINIO.com
+    service: http://127.0.0.1:8081
+  - service: http_status:404

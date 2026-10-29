@@ -5,18 +5,20 @@ import type {
   VehiculoLocal,
 } from '@victoriasapp/shared';
 
-/** Datos ficticios para probar el flujo sin depender de la API. */
-export interface DatosDeEjemplo {
-  readonly lotes: readonly LoteLocal[];
-  readonly propietarios: readonly PropietarioLocal[];
-  readonly familiares: readonly FamiliarLocal[];
-  readonly vehiculos: readonly VehiculoLocal[];
-}
+import { obtenerBaseLocal } from './base-local';
 
 const AHORA = new Date().toISOString();
 
-export function datosDeEjemplo(): DatosDeEjemplo {
-  const lotes: LoteLocal[] = [
+/**
+ * Carga datos de prueba en IndexedDB para los specs.
+ *
+ * No se usa en la aplicación: los datos de ejemplo se eliminaron del PWA y
+ * esta función solo existe para conservar la cobertura de los tests.
+ */
+export async function sembrarDirectorioDePrueba(): Promise<void> {
+  const db = obtenerBaseLocal();
+
+  const lotes: readonly LoteLocal[] = [
     {
       uuid: 'demo-lote-42',
       numero: '42',
@@ -40,7 +42,7 @@ export function datosDeEjemplo(): DatosDeEjemplo {
     },
   ];
 
-  const propietarios: PropietarioLocal[] = [
+  const propietarios: readonly PropietarioLocal[] = [
     {
       uuid: 'demo-prop-1',
       nombre: 'ANA',
@@ -76,7 +78,7 @@ export function datosDeEjemplo(): DatosDeEjemplo {
     },
   ];
 
-  const familiares: FamiliarLocal[] = [
+  const familiares: readonly FamiliarLocal[] = [
     {
       uuid: 'demo-fam-1',
       nombre: 'JUAN PEREZ',
@@ -87,7 +89,7 @@ export function datosDeEjemplo(): DatosDeEjemplo {
     },
   ];
 
-  const vehiculos: VehiculoLocal[] = [
+  const vehiculos: readonly VehiculoLocal[] = [
     {
       uuid: 'demo-veh-1',
       patente: 'AB123CD',
@@ -112,5 +114,17 @@ export function datosDeEjemplo(): DatosDeEjemplo {
     },
   ];
 
-  return { lotes, propietarios, familiares, vehiculos };
+  await db.transaction(
+    'rw',
+    db.lotes,
+    db.propietarios,
+    db.familiares,
+    db.vehiculos,
+    async () => {
+      await db.lotes.bulkPut([...lotes]);
+      await db.propietarios.bulkPut([...propietarios]);
+      await db.familiares.bulkPut([...familiares]);
+      await db.vehiculos.bulkPut([...vehiculos]);
+    },
+  );
 }

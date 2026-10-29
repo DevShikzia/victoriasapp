@@ -4,15 +4,24 @@
  */
 
 import { z } from 'zod';
+import { esquemaRegistroDomesticaSync } from './domesticas.js';
 import { esquemaVisitaSync } from './visita.js';
 
 /** Cuerpo de `POST /api/sync`: lote de cambios creados offline. */
 export const esquemaSincronizacion = z.object({
   visitas: z.array(esquemaVisitaSync).max(500).default([]),
+  registrosDomesticas: z.array(esquemaRegistroDomesticaSync).max(500).default([]),
 });
 export type SolicitudSync = z.infer<typeof esquemaSincronizacion>;
 
-export const ENTIDADES_SYNC = ['visita', 'propietario', 'vehiculo', 'lote', 'familiar'] as const;
+export const ENTIDADES_SYNC = [
+  'visita',
+  'registroDomestica',
+  'propietario',
+  'vehiculo',
+  'lote',
+  'familiar',
+] as const;
 export type EntidadSync = (typeof ENTIDADES_SYNC)[number];
 
 export const OPERACIONES_SYNC = ['create', 'update', 'delete'] as const;

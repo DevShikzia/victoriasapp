@@ -18,6 +18,28 @@ describe('parseDni — PDF417 intermedio (frente, 8/9 campos)', () => {
   });
 });
 
+describe('parseDni — normalización del número de DNI', () => {
+  it('acepta 7 u 8 dígitos y saca puntos, espacios y ceros a la izquierda', () => {
+    const siete = parseDni(
+      '00012345678@PEREZ@JUAN@M@1234567@A@15/03/1985@10/06/2019',
+    );
+    expect(siete.ok).toBe(true);
+    expect(siete.data?.numeroDni).toBe('1234567');
+
+    const conPuntos = parseDni(
+      '00012345678@PEREZ@JUAN@M@12.345.678@A@15/03/1985@10/06/2019',
+    );
+    expect(conPuntos.ok).toBe(true);
+    expect(conPuntos.data?.numeroDni).toBe('12345678');
+
+    const conCero = parseDni(
+      '00012345678@PEREZ@JUAN@M@012345678@A@15/03/1985@10/06/2019',
+    );
+    expect(conCero.ok).toBe(true);
+    expect(conCero.data?.numeroDni).toBe('12345678');
+  });
+});
+
 describe('parseDni — PDF417 viejo (reverso, 16/17 campos)', () => {
   it('mapea los índices del formato viejo', () => {
     const campos = [
@@ -56,7 +78,7 @@ describe('parseDni — MRZ TD1', () => {
   it('parsea las 3 líneas de la MRZ', () => {
     const raw = [
       'IDARG30123456<2<<<<<<<<<<<<<<<',
-      '8503155M3003157ARG<<<<<<<<<<<8',
+      '8503150M3003150ARG<<<<<<<<<<<8',
       'PEREZ<<JUAN<CARLOS<<<<<<<<<<<<',
     ].join('\n');
     const r = parseDni(raw);
@@ -69,6 +91,30 @@ describe('parseDni — MRZ TD1', () => {
     expect(r.data?.sexo).toBe('M');
     expect(r.data?.fechaNacimiento).toBe('1985-03-15');
     expect(r.data?.fechaVencimiento).toBe('2030-03-15');
+  });
+
+  it('interpreta un vencimiento de 2041 y valida los dígitos verificadores', () => {
+    const raw = [
+      'IDARG30123456<2<<<<<<<<<<<<<<<',
+      '8503150M4107033ARG<<<<<<<<<<<0',
+      'PEREZ<<JUAN<CARLOS<<<<<<<<<<<<',
+    ].join('\n');
+    const r = parseDni(raw);
+
+    expect(r.ok).toBe(true);
+    expect(r.data?.fechaVencimiento).toBe('2041-07-03');
+  });
+
+  it('rechaza una MRZ con el dígito de nacimiento incorrecto', () => {
+    const raw = [
+      'IDARG30123456<2<<<<<<<<<<<<<<<',
+      '8503156M4107033ARG<<<<<<<<<<<0',
+      'PEREZ<<JUAN<CARLOS<<<<<<<<<<<<',
+    ].join('\n');
+    const r = parseDni(raw);
+
+    expect(r.ok).toBe(false);
+    expect(r.errores.join(' ')).toContain('nacimiento');
   });
 });
 

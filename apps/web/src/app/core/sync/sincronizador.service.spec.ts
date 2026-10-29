@@ -18,7 +18,15 @@ import { DatosService } from '../db/datos.service';
 import { SincronizadorService } from './sincronizador.service';
 
 function pullVacio(desde = new Date().toISOString()): DirectorioPull {
-  return { desde, lotes: [], propietarios: [], familiares: [], vehiculos: [], eliminados: [] };
+  return {
+    desde,
+    lotes: [],
+    propietarios: [],
+    familiares: [],
+    vehiculos: [],
+    domesticas: [],
+    eliminados: [],
+  };
 }
 
 function visitaDePrueba(): NuevaVisita {
@@ -151,6 +159,7 @@ describe('SincronizadorService', () => {
         propietarios: [],
         familiares: [],
         vehiculos: [],
+        domesticas: [],
         eliminados: [],
       } satisfies DirectorioPull,
     });

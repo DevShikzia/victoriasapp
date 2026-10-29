@@ -2,8 +2,9 @@
   <header class="encabezado">
     <h1>Modo captura</h1>
     <p class="ayuda">
-      Leé un DNI para ver el <strong>payload crudo</strong> y cómo lo interpreta el parser. Sirve
-      para validar los formatos: PDF417 viejo (reverso), PDF417 intermedio (frente), QR nuevo y MRZ.
+      Leé un DNI para ver el <strong>payload crudo</strong> y los datos que usa la app:
+      <strong>documento, apellido y nombre</strong>. Para el QR chico del DNI nuevo, activá
+      <strong>QR chico</strong> y centralo en el recuadro.
     </p>
   </header>
 
@@ -18,14 +19,18 @@
 
     <label class="boton boton--suave">
       Escanear foto
-      <input
-        type="file"
-        accept="image/*"
-        capture="environment"
-        hidden
-        (change)="escanearFoto($event)"
-      />
+      <input type="file" accept="image/*" hidden (change)="escanearFoto($event)" />
     </label>
+
+    <button
+      type="button"
+      class="boton"
+      [class.boton--suave]="!modoQr()"
+      [class.boton--acento]="modoQr()"
+      (click)="alternarModoQr()"
+    >
+      {{ modoQr() ? 'QR chico activo' : 'QR chico' }}
+    </button>
 
     <button
       type="button"
@@ -39,6 +44,9 @@
 
   <div class="video" [class.video--activo]="camaraActiva()">
     <video #video playsinline muted autoplay></video>
+    @if (camaraActiva()) {
+      <div class="guia" aria-hidden="true"></div>
+    }
     @if (!camaraActiva()) {
       <p class="marcador">Cámara apagada</p>
     }
@@ -48,6 +56,40 @@
     <p class="error" role="alert">{{ mensaje }}</p>
   }
 
+  @if (fotoUrl(); as url) {
+    <figure class="foto">
+      <img [src]="url" alt="Foto analizada" />
+      <figcaption>{{ fotoInfo() }}</figcaption>
+    </figure>
+  }
+
+  <section class="diagnostico" aria-label="Diagnóstico del escaneo">
+    <h2>Diagnóstico del escaneo</h2>
+    <dl>
+      <dt>Cámara</dt>
+      <dd>{{ camaraActiva() ? 'activa' : 'apagada' }}</dd>
+      <dt>Motor</dt>
+      <dd>{{ motor === 'nativo' ? 'nativo (ML Kit)' : 'WASM (ZXing)' }}</dd>
+      <dt>Resolución</dt>
+      <dd class="mono">{{ resolucion() }}</dd>
+      <dt>Modo</dt>
+      <dd>{{ modoQr() ? 'QR chico (recorte central)' : 'Normal (frame completo + recorte)' }}</dd>
+      <dt>Intentos</dt>
+      <dd class="mono">{{ intentos() }}</dd>
+      <dt>Último intento</dt>
+      <dd>{{ ultimoIntento() ?? '—' }}</dd>
+      <dt>Fuente</dt>
+      <dd>{{ ultimaFuente() ?? '—' }}</dd>
+      <dt>Códigos en el último intento</dt>
+      <dd class="mono">{{ codigosUltimoCuadro() ?? '—' }}</dd>
+    </dl>
+    <p class="diagnostico__ayuda">
+      Si los intentos suben y los códigos quedan en 0, la cámara funciona pero no está
+      detectando el código. Probá con más luz, acercá el DNI y mantené el código completo
+      dentro del cuadro.
+    </p>
+  </section>
+
   <p class="estado">
     Formatos soportados:
     <span class="mono">{{
@@ -55,47 +97,31 @@
     }}</span>
   </p>
 
-  <form class="manual" (ngSubmit)="parsearManual()">
-    <label for="manual">Probar un payload a mano</label>
-    <textarea
-      id="manual"
-      name="manual"
-      rows="3"
-      placeholder="Pegá acá el texto del código…"
-      [ngModel]="manual()"
-      (ngModelChange)="manual.set($event)"
-    ></textarea>
-    <button type="submit" class="boton" [disabled]="manual().trim() === ''">Parsear</button>
-  </form>
-
   <ul class="resultados">
     @for (d of detecciones(); track d.id) {
       <li class="tarjeta" [class.tarjeta--ok]="d.parse.ok" [class.tarjeta--mal]="!d.parse.ok">
         <div class="tarjeta__cabecera">
           <span class="etiqueta">{{ d.formato }}</span>
+          <span class="resultado" [class.resultado--ok]="d.parse.ok" [class.resultado--mal]="!d.parse.ok">
+            {{ d.parse.ok ? 'interpretado' : 'no interpretado' }}
+          </span>
           <span class="hora">{{ d.hora }}</span>
         </div>
 
         <pre class="raw">{{ d.raw }}</pre>
 
+        <button type="button" class="copiar" (click)="copiar(d.raw, d.id)">
+          {{ copiado() === d.id ? 'Copiado' : 'Copiar payload' }}
+        </button>
+
         @if (d.parse.data; as data) {
           <dl class="datos">
-            <dt>Apellido y nombre</dt>
-            <dd>{{ data.apellido }}, {{ data.nombre }}</dd>
-            <dt>DNI</dt>
+            <dt>Documento</dt>
             <dd class="mono">{{ data.numeroDni }}</dd>
-            <dt>Sexo</dt>
-            <dd>{{ data.sexo ?? '—' }}</dd>
-            <dt>Nacimiento</dt>
-            <dd>{{ data.fechaNacimiento ?? '—' }}</dd>
-            <dt>Emisión</dt>
-            <dd>{{ data.fechaEmision ?? '—' }}</dd>
-            <dt>Vencimiento</dt>
-            <dd>{{ data.fechaVencimiento ?? '—' }}</dd>
-            <dt>N.º de trámite</dt>
-            <dd class="mono">{{ data.numeroTramite ?? '—' }}</dd>
-            <dt>Ejemplar</dt>
-            <dd>{{ data.ejemplar ?? '—' }}</dd>
+            <dt>Apellido</dt>
+            <dd>{{ data.apellido }}</dd>
+            <dt>Nombre</dt>
+            <dd>{{ data.nombre }}</dd>
           </dl>
         }
 

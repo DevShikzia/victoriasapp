@@ -23,6 +23,7 @@ import type { HydratedDocument, Types } from 'mongoose';
 
 import { errorNoEncontrado } from '../lib/errores.js';
 
+import { DomesticaModel } from '../models/domesticas.model.js';
 import {
   BarrioModel,
   EliminadoModel,
@@ -36,6 +37,7 @@ import {
   type Propietario,
   type Vehiculo,
 } from '../models/directorio.modelos.js';
+import { aDomesticaLocal } from './domesticas.service.js';
 
 type BarrioDoc = HydratedDocument<Barrio>;
 type LoteDoc = HydratedDocument<Lote>;
@@ -215,7 +217,7 @@ export async function pullDirectorio(
   });
   const familiarIds = familiares.map((doc) => doc._id);
 
-  const [vehiculos, eliminados] = await Promise.all([
+  const [vehiculos, domesticas, eliminados] = await Promise.all([
     VehiculoModel.find({
       $or: [
         { loteId: { $in: loteIds } },
@@ -226,6 +228,7 @@ export async function pullDirectorio(
         { familiarId: { $in: familiarIds } },
       ],
     }),
+    DomesticaModel.find({ barrioId }),
     EliminadoModel.find(),
   ]);
 
@@ -236,6 +239,9 @@ export async function pullDirectorio(
     familiares.map((doc) => [doc._id.toString(), doc]),
   );
   const lotesPorId = new Map<string, LoteDoc>(lotes.map((doc) => [doc._id.toString(), doc]));
+  const lotesUuidPorId = new Map<string, string>(
+    lotes.map((doc) => [doc._id.toString(), doc.uuid]),
+  );
 
   const titularesPorLote = new Map<string, PropietarioDoc[]>();
   for (const doc of propietarios) {
@@ -361,6 +367,7 @@ export async function pullDirectorio(
     propietarios: propietarios.filter(cambio).map(aPropietarioLocal),
     familiares: familiares.filter(cambio).map(aFamiliarLocal),
     vehiculos: vehiculos.filter(cambio).map(aVehiculoLocal),
+    domesticas: domesticas.filter(cambio).map((doc) => aDomesticaLocal(doc, lotesUuidPorId)),
     eliminados: eliminadosFiltrados,
   };
 }

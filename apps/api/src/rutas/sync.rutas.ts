@@ -6,6 +6,7 @@ import { configTokens } from '../auth/tokens.js';
 import type { Env } from '../config/env.js';
 import { errorBarrioRequerido } from '../lib/errores.js';
 import { asincrono, respuestaOk, validar } from '../lib/http.js';
+import { aplicarSyncRegistrosDomesticas } from '../servicios/domesticas.service.js';
 import { aplicarSyncVisitas } from '../servicios/visitas.service.js';
 
 /**
@@ -24,8 +25,16 @@ export function crearRutasSync(env: Env): Router {
         throw errorBarrioRequerido();
       }
       const solicitud = validar(esquemaSincronizacion, req.body);
-      const resultado = await aplicarSyncVisitas(solicitud.visitas, usuario);
-      respuestaOk(res, resultado);
+      const visitas = await aplicarSyncVisitas(solicitud.visitas, usuario);
+      const registros = await aplicarSyncRegistrosDomesticas(
+        solicitud.registrosDomesticas,
+        usuario,
+      );
+      respuestaOk(res, {
+        aplicados: [...visitas.aplicados, ...registros.aplicados],
+        duplicados: [...visitas.duplicados, ...registros.duplicados],
+        errores: [...visitas.errores, ...registros.errores],
+      });
     }),
   );
 

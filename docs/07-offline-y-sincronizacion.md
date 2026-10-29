@@ -16,6 +16,8 @@ Se usa IndexedDB (vía `Dexie` o `idb`). Tablas locales:
 | `lotes` | Caché de lotes |
 | `vehiculos` | Caché de vehículos |
 | `familiares` | Caché de familiares |
+| `domesticas` | Caché de perfiles de domésticas (búsqueda offline) |
+| `registrosDomesticas` | Entradas/salidas de domésticas creadas en el dispositivo |
 | `sesion` | Usuario y tokens |
 | `meta` | Última sincronización, versión de esquema |
 
@@ -26,7 +28,7 @@ Cada cambio local (crear visita, marcar salida, editar) genera una **operación*
 ```ts
 interface OutboxItem {
   readonly id: string;          // id local
-  readonly entidad: 'visita' | 'propietario' | 'vehiculo' | 'lote' | 'familiar';
+  readonly entidad: 'visita' | 'registroDomestica' | 'propietario' | 'vehiculo' | 'lote' | 'familiar';
   readonly operacion: 'create' | 'update' | 'delete';
   readonly uuid: string;        // uuid de la entidad
   readonly payload: unknown;    // datos a enviar (tipado en el modelo)
@@ -120,6 +122,12 @@ La parte local está en el PWA:
   por Socket.IO; descarta eventos de visitas de otros barrios.
 - `core/busqueda/propietarios.ts` + `features/propietarios/` — listado offline de propietarios con
   búsqueda y orden por lote/alfabético.
+- `apps/web/src/app/features/domesticas/` — perfiles de domésticas (ABM online para admin/supervisor)
+  y registro de entrada/descripción/salida **offline**: el registro se guarda en
+  `registrosDomesticas` + `outbox` y se sube por `/api/sync`. El perfil se cachea con el pull del
+  directorio. Una doméstica no puede tener dos entradas abiertas: se valida en el cliente y en el
+  servidor. El historial se arma con los registros locales y se puede filtrar por fecha, lote,
+  doméstica, estado y texto.
 
 La **subida del outbox** y el **pull incremental del directorio** ya están (Fases 3 y 4). Pendiente:
 la **edición offline del directorio** (hoy el ABM es online, admin/supervisor) y el pull de visitas

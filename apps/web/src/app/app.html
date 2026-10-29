@@ -23,6 +23,7 @@
       <a routerLink="/buscar" routerLinkActive="activo">Buscar</a>
       <a routerLink="/propietarios" routerLinkActive="activo">Propietarios</a>
       <a routerLink="/visitas" routerLinkActive="activo">Visitas</a>
+      <a routerLink="/domesticas" routerLinkActive="activo">Domésticas</a>
       <a routerLink="/visita/nueva" routerLinkActive="activo">Nueva</a>
       <a routerLink="/panel" routerLinkActive="activo">Panel</a>
       <a routerLink="/captura" routerLinkActive="activo">Captura</a>
@@ -174,6 +175,10 @@
 
       <a routerLink="/captura" class="menu-mas__item" role="menuitem" (click)="cerrarMenu()">
         Modo captura
+      </a>
+
+      <a routerLink="/domesticas" class="menu-mas__item" role="menuitem" (click)="cerrarMenu()">
+        Domésticas
       </a>
 
       @if (puedeAdministrar()) {

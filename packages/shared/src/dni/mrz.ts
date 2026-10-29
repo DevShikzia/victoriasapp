@@ -48,11 +48,20 @@ export function parseMrz(raw: string): MrzData | null {
 
   // Línea 2: fecha nacimiento (6) + dígito + sexo + fecha vencimiento (6) + dígito + ...
   const nacimientoYYMMDD = l2.slice(0, 6);
+  const digitoNacimiento = l2.slice(6, 7);
   const sexoChar = l2.slice(7, 8);
   const vencimientoYYMMDD = l2.slice(8, 14);
+  const digitoVencimiento = l2.slice(14, 15);
 
-  const fechaNacimiento = desdeYYMMDD(nacimientoYYMMDD);
-  const fechaVencimiento = desdeYYMMDD(vencimientoYYMMDD);
+  if (digitoNacimiento !== calcularDigito(nacimientoYYMMDD)) {
+    errores.push('Dígito verificador de la fecha de nacimiento incorrecto');
+  }
+  if (digitoVencimiento !== calcularDigito(vencimientoYYMMDD)) {
+    errores.push('Dígito verificador de la fecha de vencimiento incorrecto');
+  }
+
+  const fechaNacimiento = desdeYYMMDD(nacimientoYYMMDD, 'nacimiento');
+  const fechaVencimiento = desdeYYMMDD(vencimientoYYMMDD, 'vencimiento');
 
   const sexo: Sexo | null =
     sexoChar === 'M' || sexoChar === 'F' || sexoChar === 'X' ? sexoChar : null;
@@ -82,15 +91,21 @@ function dividirLineas(raw: string): string[] {
     .filter((linea) => linea.replaceAll('<', '').trim() !== '');
 }
 
-/** Convierte `YYMMDD` a ISO `YYYY-MM-DD` (siglo 2000 si `YY <= 30`). */
-function desdeYYMMDD(yymmdd: string): string | null {
+/**
+ * Convierte `YYMMDD` a ISO `YYYY-MM-DD`.
+ *
+ * Para la fecha de nacimiento se usa el pivote habitual (siglo 2000 si
+ * `YY <= 30`). Para el vencimiento se asume siempre el siglo 2000: un DNI
+ * moderno puede vencer en 2041 y no en 1941.
+ */
+function desdeYYMMDD(yymmdd: string, tipo: 'nacimiento' | 'vencimiento'): string | null {
   if (!/^\d{6}$/.test(yymmdd)) {
     return null;
   }
   const yy = Number.parseInt(yymmdd.slice(0, 2), 10);
   const mm = yymmdd.slice(2, 4);
   const dd = yymmdd.slice(4, 6);
-  const siglo = yy <= 30 ? 2000 : 1900;
+  const siglo = tipo === 'vencimiento' || yy <= 30 ? 2000 : 1900;
   return aFechaIso(`${String(siglo + yy)}-${mm}-${dd}`);
 }
 

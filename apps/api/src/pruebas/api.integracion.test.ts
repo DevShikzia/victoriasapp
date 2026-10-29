@@ -747,3 +747,298 @@ describe('directorio', () => {
     expect(local?.usuariosNombres).toEqual(['Elena Paz', 'Tomas Paz']);
   });
 });
+
+describe('domésticas', () => {
+  const DNI = '33444555';
+  let principalUuid = '';
+  let habitualUuid = '';
+  let perfilUuid = '';
+
+  async function tokenGuardia(): Promise<string> {
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ usuario: 'guardia1', password: 'clave12345' })
+      .expect(200);
+    const tokenInicial = (cuerpoJson(login) as CuerpoLogin).data.accessToken;
+    const eleccion = await request(app)
+      .put('/api/auth/barrio')
+      .set('Authorization', `Bearer ${tokenInicial}`)
+      .send({ barrioId: idBarrio })
+      .expect(200);
+    return (cuerpoJson(eleccion) as CuerpoLogin).data.accessToken;
+  }
+
+  /** Reutiliza los lotes del directorio y crea uno nuevo para "habitual". */
+  async function prepararLotes(): Promise<void> {
+    if (principalUuid !== '' && habitualUuid !== '') {
+      return;
+    }
+    const token = await tokenAdmin();
+    const pull = await request(app)
+      .get('/api/directorio')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const principal = (cuerpoJson(pull) as CuerpoData<DirectorioPull>).data.lotes.find(
+      (lote) => lote.numero === '42',
+    );
+    expect(principal).toBeDefined();
+
+    const creado = await request(app)
+      .post('/api/lotes')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ numero: '77', calle: 'Los Álamos' })
+      .expect(201);
+    const lote = (cuerpoJson(creado) as CuerpoData<{ uuid: string }>).data;
+
+    principalUuid = principal?.uuid ?? '';
+    habitualUuid = lote.uuid;
+  }
+
+  async function asegurarPerfil(): Promise<string> {
+    if (perfilUuid !== '') {
+      return perfilUuid;
+    }
+    await prepararLotes();
+    const token = await tokenAdmin();
+    const creado = await request(app)
+      .post('/api/domesticas')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        nombre: 'Rosa',
+        apellido: 'Molina',
+        dni: DNI,
+        telefono: '11-4444-4444',
+        lotePrincipalUuid: principalUuid,
+        lotesHabituales: [habitualUuid],
+        notas: 'Limpia los martes',
+      })
+      .expect(201);
+    const perfil = (
+      cuerpoJson(creado) as CuerpoData<{
+        uuid: string;
+        lotePrincipalUuid: string | null;
+        lotesHabituales: string[];
+      }>
+    ).data;
+    expect(perfil.lotePrincipalUuid).toBe(principalUuid);
+    expect(perfil.lotesHabituales).toEqual([habitualUuid]);
+    perfilUuid = perfil.uuid;
+    return perfilUuid;
+  }
+
+  it('un admin crea el perfil y el pull del directorio lo incluye', async () => {
+    const uuid = await asegurarPerfil();
+    const token = await tokenAdmin();
+
+    const pull = await request(app)
+      .get('/api/directorio')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const datos = (cuerpoJson(pull) as CuerpoData<DirectorioPull>).data;
+    const local = datos.domesticas.find((domestica) => domestica.uuid === uuid);
+    expect(local?.dni).toBe(DNI);
+    expect(local?.lotePrincipalUuid).toBe(principalUuid);
+    expect(local?.lotesHabituales).toEqual([habitualUuid]);
+  });
+
+  it('no permite dos perfiles con el mismo DNI en el barrio', async () => {
+    await asegurarPerfil();
+    await prepararLotes();
+    const token = await tokenAdmin();
+    const respuesta = await request(app)
+      .post('/api/domesticas')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        nombre: 'Otra',
+        apellido: 'Persona',
+        dni: DNI,
+        lotePrincipalUuid: habitualUuid,
+      })
+      .expect(409);
+    const cuerpo = cuerpoJson(respuesta) as { error: { code: string } };
+    expect(cuerpo.error.code).toBe('CONFLICT');
+  });
+
+  it('un guardia no puede crear, editar ni desactivar perfiles (403)', async () => {
+    await prepararLotes();
+    const token = await tokenGuardia();
+    const cuerpo = {
+      nombre: 'No',
+      apellido: 'Permitido',
+      dni: '30999888',
+      lotePrincipalUuid: principalUuid,
+    };
+    await request(app)
+      .post('/api/domesticas')
+      .set('Authorization', `Bearer ${token}`)
+      .send(cuerpo)
+      .expect(403);
+    await request(app)
+      .patch(`/api/domesticas/${perfilUuid}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ nombre: 'Cambio' })
+      .expect(403);
+    await request(app)
+      .delete(`/api/domesticas/${perfilUuid}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(403);
+  });
+
+  it('registra entrada y salida por sync, sin duplicar ni abrir dos veces', async () => {
+    const domesticaUuid = await asegurarPerfil();
+    const token = await tokenGuardia();
+    const entrada = {
+      uuid: 'dom-entrada-1',
+      domesticaUuid,
+      loteUuid: habitualUuid,
+      entradaEn: '2026-10-20T11:00:00.000Z',
+      salidaEn: null,
+      descripcion: 'Limpieza',
+      actualizadoEn: '2026-10-20T11:00:00.000Z',
+    };
+
+    const primero = await request(app)
+      .post('/api/sync')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ registrosDomesticas: [entrada] })
+      .expect(200);
+    const resultadoPrimero = (
+      cuerpoJson(primero) as CuerpoData<{ aplicados: string[]; errores: unknown[] }>
+    ).data;
+    expect(resultadoPrimero.aplicados).toEqual(['dom-entrada-1']);
+    expect(resultadoPrimero.errores).toHaveLength(0);
+
+    // Reenviar lo mismo es idempotente.
+    const reenvio = await request(app)
+      .post('/api/sync')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ registrosDomesticas: [entrada] })
+      .expect(200);
+    expect((cuerpoJson(reenvio) as CuerpoData<{ duplicados: string[] }>).data.duplicados).toEqual([
+      'dom-entrada-1',
+    ]);
+
+    // Otra entrada abierta con distinto uuid debe rechazarse.
+    const segundaAbierta = await request(app)
+      .post('/api/sync')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        registrosDomesticas: [
+          {
+            ...entrada,
+            uuid: 'dom-entrada-2',
+            entradaEn: '2026-10-20T15:00:00.000Z',
+            actualizadoEn: '2026-10-20T15:00:00.000Z',
+          },
+        ],
+      })
+      .expect(200);
+    const errores = (
+      cuerpoJson(segundaAbierta) as CuerpoData<{ errores: { uuid: string; mensaje: string }[] }>
+    ).data.errores;
+    expect(errores).toEqual([
+      { uuid: 'dom-entrada-2', mensaje: 'La doméstica ya tiene una entrada abierta' },
+    ]);
+
+    const dentro = await request(app)
+      .get('/api/domesticas/registros?estado=dentro')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const abiertos = (cuerpoJson(dentro) as CuerpoData<{ uuid: string }[]>).data;
+    expect(abiertos.map((registro) => registro.uuid)).toEqual(['dom-entrada-1']);
+
+    const salida = await request(app)
+      .post('/api/sync')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        registrosDomesticas: [
+          {
+            ...entrada,
+            salidaEn: '2026-10-20T17:30:00.000Z',
+            descripcion: 'Limpieza y planchado',
+            actualizadoEn: '2026-10-20T17:30:00.000Z',
+          },
+        ],
+      })
+      .expect(200);
+    const resultadoSalida = (
+      cuerpoJson(salida) as CuerpoData<{ aplicados: string[]; errores: unknown[] }>
+    ).data;
+    expect(resultadoSalida.aplicados).toEqual(['dom-entrada-1']);
+    expect(resultadoSalida.errores).toHaveLength(0);
+
+    const dentroDespues = await request(app)
+      .get('/api/domesticas/registros?estado=dentro')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect((cuerpoJson(dentroDespues) as CuerpoData<unknown[]>).data).toHaveLength(0);
+
+    const fuera = await request(app)
+      .get(`/api/domesticas/registros?estado=fuera&domestica=${domesticaUuid}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const cerrados = (
+      cuerpoJson(fuera) as CuerpoData<{ uuid: string; salidaEn: string | null }[]>
+    ).data;
+    expect(cerrados).toHaveLength(1);
+    expect(cerrados[0]?.uuid).toBe('dom-entrada-1');
+    expect(cerrados[0]?.salidaEn).toBe('2026-10-20T17:30:00.000Z');
+  });
+
+  it('aísla los perfiles y registros entre barrios', async () => {
+    const domesticaUuid = await asegurarPerfil();
+    const tokenAdminActual = await tokenAdmin();
+
+    await request(app)
+      .post('/api/users')
+      .set('Authorization', `Bearer ${tokenAdminActual}`)
+      .send({
+        usuario: 'guardia-barrio-2',
+        nombre: 'Guardia Dos',
+        password: 'clave12345',
+        rol: 'guardia',
+      })
+      .expect(201);
+
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ usuario: 'guardia-barrio-2', password: 'clave12345' })
+      .expect(200);
+    const tokenInicial = (cuerpoJson(login) as CuerpoLogin).data.accessToken;
+    const eleccion = await request(app)
+      .put('/api/auth/barrio')
+      .set('Authorization', `Bearer ${tokenInicial}`)
+      .send({ nombre: 'Barrio Vecino' })
+      .expect(200);
+    const tokenOtroBarrio = (cuerpoJson(eleccion) as CuerpoLogin).data.accessToken;
+
+    const listado = await request(app)
+      .get('/api/domesticas')
+      .set('Authorization', `Bearer ${tokenOtroBarrio}`)
+      .expect(200);
+    expect((cuerpoJson(listado) as CuerpoData<unknown[]>).data).toHaveLength(0);
+
+    const sync = await request(app)
+      .post('/api/sync')
+      .set('Authorization', `Bearer ${tokenOtroBarrio}`)
+      .send({
+        registrosDomesticas: [
+          {
+            uuid: 'dom-ajeno-1',
+            domesticaUuid,
+            loteUuid: habitualUuid,
+            entradaEn: '2026-10-21T11:00:00.000Z',
+            salidaEn: null,
+            actualizadoEn: '2026-10-21T11:00:00.000Z',
+          },
+        ],
+      })
+      .expect(200);
+    const resultado = (
+      cuerpoJson(sync) as CuerpoData<{ errores: { uuid: string; mensaje: string }[] }>
+    ).data;
+    expect(resultado.errores).toEqual([
+      { uuid: 'dom-ajeno-1', mensaje: 'La doméstica no existe en este barrio' },
+    ]);
+  });
+});

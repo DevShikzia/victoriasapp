@@ -65,34 +65,6 @@
   }
 }
 
-.aviso {
-  margin-bottom: var(--esp-3);
-  padding: var(--esp-2) var(--esp-3);
-  border: 1px solid var(--exito-borde);
-  border-radius: var(--radio);
-  background: var(--exito-suave);
-  color: var(--exito);
-  font-size: 0.88rem;
-}
-
-.demo {
-  margin-bottom: var(--esp-4);
-
-  summary {
-    cursor: pointer;
-    color: var(--texto-suave);
-    font-size: 0.8rem;
-    font-weight: 600;
-  }
-}
-
-.herramientas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--esp-2);
-  margin-top: var(--esp-2);
-}
-
 .vacio {
   padding: var(--esp-5) var(--esp-4);
   border: 1px dashed var(--borde);
@@ -220,6 +192,197 @@
 
   &--error {
     color: var(--peligro);
+  }
+}
+
+.encabezado__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--esp-2);
+}
+
+.aviso {
+  margin-bottom: var(--esp-3);
+  padding: var(--esp-2) var(--esp-3);
+  border-radius: var(--radio);
+  font-size: 0.88rem;
+
+  &--ok {
+    border: 1px solid var(--exito-borde);
+    background: var(--exito-suave);
+    color: var(--exito);
+  }
+
+  &--error {
+    border: 1px solid var(--peligro-borde);
+    background: var(--peligro-suave);
+    color: var(--peligro);
+  }
+}
+
+.filtros {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--esp-2);
+  margin-bottom: var(--esp-3);
+  padding: var(--esp-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  background: var(--superficie);
+  box-shadow: var(--sombra-1);
+}
+
+.filtros label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.filtros input {
+  min-height: var(--tap);
+  padding: 0 var(--esp-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 16px;
+}
+
+.filtros__buscar {
+  grid-column: 1 / -1;
+}
+
+.filtros__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+  grid-column: 1 / -1;
+}
+
+.edicion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-3);
+  margin-bottom: var(--esp-3);
+  padding: var(--esp-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-lg);
+  background: var(--superficie);
+  box-shadow: var(--sombra-1);
+}
+
+.edicion__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-2);
+
+  h2 {
+    font-size: 1.05rem;
+  }
+}
+
+.edicion__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+}
+
+.edicion__nota {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.78rem;
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--esp-2);
+}
+
+.campos label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.campos input {
+  min-height: var(--tap);
+  padding: 0 var(--esp-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 16px;
+}
+
+.tipo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--esp-2);
+}
+
+.tipo label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 48px;
+  padding: var(--esp-2);
+  border: 2px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  color: var(--texto-suave);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tipo label.activo {
+  border-color: var(--acento);
+  background: var(--acento-suave);
+  color: var(--acento);
+}
+
+.tipo input {
+  accent-color: var(--acento);
+}
+
+.enlace {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--acento-claro);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.pie__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-2);
+}
+
+@media (min-width: 600px) {
+  .filtros {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .filtros__buscar,
+  .filtros__acciones {
+    grid-column: 1 / -1;
+  }
+
+  .campos {
+    grid-template-columns: 1fr 1fr;
   }
 }
 

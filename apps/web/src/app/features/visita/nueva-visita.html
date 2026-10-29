@@ -81,43 +81,17 @@
         />
       </label>
 
-      <div class="fila">
-        <label>
-          DNI *
-          <input
-            type="text"
-            name="dni"
-            inputmode="numeric"
-            autocomplete="off"
-            [ngModel]="modelo().dni"
-            (ngModelChange)="actualizar('dni', $event)"
-          />
-        </label>
-
-        <label>
-          Nacimiento
-          <input
-            type="date"
-            name="fechaNacimiento"
-            [ngModel]="modelo().fechaNacimiento"
-            (ngModelChange)="actualizar('fechaNacimiento', $event)"
-          />
-        </label>
-
-        <label>
-          Sexo
-          <select
-            name="sexo"
-            [ngModel]="modelo().sexo"
-            (ngModelChange)="actualizar('sexo', $event)"
-          >
-            <option value="">—</option>
-            <option value="M">Masculino</option>
-            <option value="F">Femenino</option>
-            <option value="X">X</option>
-          </select>
-        </label>
-      </div>
+      <label>
+        DNI *
+        <input
+          type="text"
+          name="dni"
+          inputmode="numeric"
+          autocomplete="off"
+          [ngModel]="modelo().dni"
+          (ngModelChange)="actualizarDni($event)"
+        />
+      </label>
     </fieldset>
 
     <fieldset>
@@ -200,25 +174,24 @@
         />
       </label>
 
-      <label>
-        Acompañantes
-        <input
-          type="number"
-          name="acompanantes"
-          min="0"
-          max="50"
-          [ngModel]="modelo().acompanantes"
-          (ngModelChange)="actualizar('acompanantes', +$event)"
-        />
-      </label>
     </fieldset>
 
-    <button
-      type="submit"
-      class="boton boton--acento boton--grande boton--bloque"
-      [disabled]="guardando() || !acompanantesValidos()"
-    >
-      {{ guardando() ? 'Guardando…' : 'Guardar visita' }}
-    </button>
+    <div class="acciones-guardar">
+      <button
+        type="submit"
+        class="boton boton--acento boton--grande"
+        [disabled]="guardando()"
+      >
+        {{ guardando() ? 'Guardando…' : 'Guardar' }}
+      </button>
+      <button
+        type="button"
+        class="boton boton--suave boton--grande"
+        [disabled]="guardando()"
+        (click)="guardar(true)"
+      >
+        {{ guardando() ? 'Guardando…' : 'Guardar y escanear otro' }}
+      </button>
+    </div>
   </form>
 </section>

@@ -15,6 +15,7 @@ import {
   crearRutasPropietarios,
   crearRutasVehiculos,
 } from './rutas/directorio.rutas.js';
+import { crearRutasDomesticas } from './rutas/domesticas.rutas.js';
 import { crearRutasSync } from './rutas/sync.rutas.js';
 import { crearRutasUsuarios } from './rutas/usuarios.rutas.js';
 import { crearRutasVisitas } from './rutas/visitas.rutas.js';
@@ -79,6 +80,7 @@ export function crearApp(env: Env): Express {
   app.use('/api/propietarios', crearRutasPropietarios(env));
   app.use('/api/familiares', crearRutasFamiliares(env));
   app.use('/api/vehiculos', crearRutasVehiculos(env));
+  app.use('/api/domesticas', crearRutasDomesticas(env));
 
   app.use(noEncontrado());
   app.use(manejadorErrores(env));

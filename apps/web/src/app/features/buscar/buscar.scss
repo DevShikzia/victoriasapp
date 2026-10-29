@@ -106,28 +106,6 @@
   font-size: 0.9rem;
 }
 
-.pista__ejemplos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--esp-2);
-  margin-top: var(--esp-4);
-}
-
-.chip {
-  min-height: 38px;
-  padding: 0 var(--esp-3);
-  border: 1px solid var(--borde);
-  border-radius: var(--radio-pill);
-  background: var(--superficie-2);
-  color: var(--acento);
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-
-.chip:active {
-  background: var(--acento-suave);
-}
-
 .estado,
 .vacio {
   margin-top: var(--esp-4);

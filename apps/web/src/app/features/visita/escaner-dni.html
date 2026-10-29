@@ -1,17 +1,46 @@
 <div class="escaner">
   @if (!activo()) {
-    <button type="button" class="boton" (click)="iniciar()">📷 Escanear DNI</button>
+    <button type="button" class="boton" [disabled]="iniciando()" (click)="iniciar()">
+      📷 {{ iniciando() ? 'Encendiendo…' : 'Escanear DNI' }}
+    </button>
   } @else {
     <button type="button" class="boton boton--suave" (click)="detener()">Detener</button>
   }
-  <span class="estado">{{ estado() }}</span>
+  <label class="boton boton--suave">
+    Escanear foto
+    <input type="file" accept="image/*" hidden (change)="escanearFoto($event)" />
+  </label>
+  <button
+    type="button"
+    class="boton"
+    [class.boton--suave]="!modoQr()"
+    [class.boton--acento]="modoQr()"
+    (click)="alternarModoQr()"
+  >
+    {{ modoQr() ? 'QR chico activo' : 'QR chico' }}
+  </button>
+  <span class="estado">
+    {{ estado() }}
+    @if (resolucion() !== '—') {
+      <span class="resolucion">· {{ resolucion() }}</span>
+    }
+  </span>
 </div>
 
-@if (activo()) {
-  <div class="video">
-    <video #video playsinline muted autoplay></video>
-  </div>
-}
+<div class="video" [class.video--activo]="activo()">
+  <video #video playsinline muted autoplay></video>
+  @if (activo()) {
+    <div class="guia" aria-hidden="true"></div>
+  }
+  @if (!activo()) {
+    <p class="marcador">{{ iniciando() ? 'Encendiendo cámara…' : 'Cámara apagada' }}</p>
+  }
+</div>
+
+<p class="ayuda">
+  Centrá el QR o el código dentro del recuadro. Para el QR del DNI nuevo, activá
+  “QR chico”. Si no se lee, probá con más luz o usá “Escanear foto”.
+</p>
 
 @if (error(); as mensaje) {
   <p class="error" role="alert">{{ mensaje }}</p>

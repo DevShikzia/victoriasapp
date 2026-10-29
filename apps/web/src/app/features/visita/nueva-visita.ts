@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import type {
@@ -6,11 +6,14 @@ import type {
   LoteLocal,
   NuevaVisitaInput,
   PropietarioLocal,
-  Sexo,
   TipoVisita,
   VehiculoLocal,
 } from '@victoriasapp/shared';
-import { esquemaNuevaVisita, normalizarPatente } from '@victoriasapp/shared';
+import {
+  esquemaNuevaVisita,
+  normalizarNumeroDni,
+  normalizarPatente,
+} from '@victoriasapp/shared';
 
 import { DatosService } from '../../core/db/datos.service';
 import { EscanerDni, type ResultadoEscaner } from './escaner-dni';
@@ -21,13 +24,10 @@ interface ModeloFormulario {
   apellido: string;
   nombre: string;
   dni: string;
-  fechaNacimiento: string;
-  sexo: string;
   patente: string;
   loteNumero: string;
   propietarioNombre: string;
   motivo: string;
-  acompanantes: number;
 }
 
 function modeloVacio(): ModeloFormulario {
@@ -36,13 +36,10 @@ function modeloVacio(): ModeloFormulario {
     apellido: '',
     nombre: '',
     dni: '',
-    fechaNacimiento: '',
-    sexo: '',
     patente: '',
     loteNumero: '',
     propietarioNombre: '',
     motivo: '',
-    acompanantes: 0,
   };
 }
 
@@ -73,16 +70,16 @@ export class NuevaVisita {
   protected readonly sugerenciasPropietarios = signal<readonly PropietarioLocal[]>([]);
   protected readonly sugerenciasVehiculos = signal<readonly VehiculoLocal[]>([]);
 
-  protected readonly acompanantesValidos = computed(() => {
-    const n = this.modelo().acompanantes;
-    return Number.isInteger(n) && n >= 0 && n <= 50;
-  });
-
   protected actualizar<K extends keyof ModeloFormulario>(
     campo: K,
     valor: ModeloFormulario[K],
   ): void {
     this.modelo.update((m) => ({ ...m, [campo]: valor }));
+  }
+
+  /** El DNI se guarda solo con dígitos y admite 7 u 8 números. */
+  protected actualizarDni(valor: string): void {
+    this.actualizar('dni', normalizarNumeroDni(valor).slice(0, 8));
   }
 
   protected alCambiarLote(valor: string): void {
@@ -160,31 +157,29 @@ export class NuevaVisita {
       apellido: data.apellido !== '' ? data.apellido : m.apellido,
       nombre: data.nombre !== '' ? data.nombre : m.nombre,
       dni: data.numeroDni !== '' ? data.numeroDni : m.dni,
-      fechaNacimiento: data.fechaNacimiento ?? m.fechaNacimiento,
-      sexo: data.sexo ?? m.sexo,
     }));
     this.origenDocumento.set(resultado.formato);
     this.documentoRaw.set(resultado.raw);
     this.mostrarEscaner.set(false);
   }
 
-  protected async guardar(): Promise<void> {
+  protected async guardar(continuar = false): Promise<void> {
     this.guardada.set(null);
     const m = this.modelo();
     const entrada: NuevaVisitaInput = {
       tipo: m.tipo,
       apellido: m.apellido,
       nombre: m.nombre,
-      dni: m.dni,
-      fechaNacimiento: aTexto(m.fechaNacimiento),
-      sexo: m.sexo === '' ? null : (m.sexo as Sexo),
+      dni: normalizarNumeroDni(m.dni),
+      fechaNacimiento: null,
+      sexo: null,
       formatoDocumento: this.origenDocumento(),
       documentoRaw: this.documentoRaw(),
       patente: aTexto(m.patente) === null ? null : normalizarPatente(m.patente),
       loteNumero: aTexto(m.loteNumero),
       propietarioNombre: aTexto(m.propietarioNombre),
       motivo: aTexto(m.motivo),
-      acompanantes: m.acompanantes,
+      acompanantes: 0,
       entradaEn: new Date().toISOString(),
     };
 
@@ -204,8 +199,26 @@ export class NuevaVisita {
     try {
       await this.datos.guardarVisita(validacion.data);
       const quien = `${validacion.data.apellido}, ${validacion.data.nombre}`;
-      this.guardada.set(`Visita registrada: ${quien}`);
-      this.modelo.set(modeloVacio());
+      this.guardada.set(
+        continuar
+          ? `Visita registrada: ${quien}. Escaneá el siguiente DNI.`
+          : `Visita registrada: ${quien}`,
+      );
+
+      if (continuar) {
+        this.modelo.set({
+          ...modeloVacio(),
+          tipo: m.tipo,
+          loteNumero: m.loteNumero,
+          propietarioNombre: m.propietarioNombre,
+          motivo: m.motivo,
+        });
+        this.mostrarEscaner.set(true);
+      } else {
+        this.modelo.set(modeloVacio());
+        this.mostrarEscaner.set(false);
+      }
+
       this.origenDocumento.set('manual');
       this.documentoRaw.set(null);
       this.sugerenciasLotes.set([]);

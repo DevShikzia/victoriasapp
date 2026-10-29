@@ -1,10 +1,12 @@
 import Dexie, { type Table } from 'dexie';
 import type {
+  DomesticaLocal,
   FamiliarLocal,
   LoteLocal,
   MetaLocal,
   OutboxItem,
   PropietarioLocal,
+  RegistroDomesticaLocal,
   SesionLocal,
   VehiculoLocal,
   Visita,
@@ -24,6 +26,8 @@ export class BaseLocal extends Dexie {
   declare readonly propietarios: Table<PropietarioLocal, string>;
   declare readonly familiares: Table<FamiliarLocal, string>;
   declare readonly vehiculos: Table<VehiculoLocal, string>;
+  declare readonly domesticas: Table<DomesticaLocal, string>;
+  declare readonly registrosDomesticas: Table<RegistroDomesticaLocal, string>;
   declare readonly sesion: Table<SesionLocal, string>;
   declare readonly meta: Table<MetaLocal, string>;
 
@@ -67,6 +71,44 @@ export class BaseLocal extends Dexie {
                 : [mutable.propietarioNombre];
           });
       });
+    // v3: elimina los datos de ejemplo (`demo-*`) que hayan quedado en cachés
+    // viejas. Se ejecuta una sola vez por dispositivo.
+    this.version(3)
+      .stores({
+        visitas: 'uuid, entradaEn, dni, patente, loteNumero, estadoSync',
+        outbox: 'id, entidad, uuid, creadoEn',
+        lotes: 'uuid, numero',
+        propietarios: 'uuid, apellido, nombre, loteNumero',
+        familiares: 'uuid, nombre, propietarioNombre, loteNumero',
+        vehiculos: 'uuid, patente, loteNumero',
+        sesion: 'usuario',
+        meta: 'clave',
+      })
+      .upgrade(async (transaccion) => {
+        const tablas = ['visitas', 'outbox', 'lotes', 'propietarios', 'familiares', 'vehiculos'];
+        for (const nombre of tablas) {
+          await transaccion
+            .table(nombre)
+            .filter(
+              (item: { uuid?: unknown }) =>
+                typeof item.uuid === 'string' && item.uuid.startsWith('demo-'),
+            )
+            .delete();
+        }
+      });
+    // v4: perfiles de domésticas y sus registros de entrada/salida.
+    this.version(4).stores({
+      visitas: 'uuid, entradaEn, dni, patente, loteNumero, estadoSync',
+      outbox: 'id, entidad, uuid, creadoEn',
+      lotes: 'uuid, numero',
+      propietarios: 'uuid, apellido, nombre, loteNumero',
+      familiares: 'uuid, nombre, propietarioNombre, loteNumero',
+      vehiculos: 'uuid, patente, loteNumero',
+      domesticas: 'uuid, dni, apellido, nombre, lotePrincipalUuid, activo',
+      registrosDomesticas: 'uuid, domesticaUuid, loteUuid, entradaEn, salidaEn, estadoSync',
+      sesion: 'usuario',
+      meta: 'clave',
+    });
   }
 }
 
